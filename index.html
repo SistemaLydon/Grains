@@ -1,0 +1,1919 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Acid Plastic Grains</title>
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Grains">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+/* =========================================================
+   UI · ESTILOS (blanco y negro, Helvetica, líneas de 1px)
+   ========================================================= */
+:root{
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: "Helvetica Neue", Helvetica, Inter, Arial, sans-serif;
+  --nav: 54px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:#fff}
+body{
+  background:#fff;color:#000;font-family:var(--sans);font-size:12px;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+  touch-action:manipulation;-webkit-text-size-adjust:100%;
+  padding-bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 24px);
+}
+button{font:inherit;color:#000;background:#fff;border:1px solid #000;border-radius:0;-webkit-appearance:none;appearance:none;cursor:pointer}
+.mono{font-family:var(--mono)}
+.lbl{font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:600}
+
+.btn{min-width:44px;height:36px;padding:0 10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+.btn.on{background:#000;color:#fff}
+.btn.sm{height:30px;min-width:34px;padding:0 7px;font-size:10px;letter-spacing:.12em}
+.btn:disabled{border-style:dashed;cursor:default}
+.btn.flash{background:#000;color:#fff}
+.btn.dim{border-style:dashed}
+.btn.mut{border-style:dashed;text-decoration:line-through}
+
+/* ---- pantalla de inicio ---- */
+#start{position:fixed;inset:0;z-index:100;background:#fff;display:flex;flex-direction:column;justify-content:center;
+  padding:32px 24px calc(32px + env(safe-area-inset-bottom));gap:22px}
+#start .big{font-size:44px;line-height:.98;font-weight:700;letter-spacing:.06em}
+#start .line{height:1px;background:#000}
+#start .btn{height:56px;font-size:13px;letter-spacing:.3em}
+#start p{font-size:11px;line-height:1.55;letter-spacing:.04em}
+
+/* ---- cabecera / transporte ---- */
+header{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #000;
+  padding:calc(env(safe-area-inset-top) + 12px) 16px 10px}
+.title{display:flex;justify-content:space-between;align-items:center;gap:10px}
+h1{font-size:12px;letter-spacing:.34em;font-weight:700;white-space:nowrap}
+#status{font-family:var(--mono);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#status.err{background:#000;color:#fff;padding:1px 5px}
+.transport{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+.transport .sp{flex:1}
+.bpm{display:flex;height:36px;border:1px solid #000}
+.bpm button{border:0;width:32px;height:100%;font-size:16px}
+.bpm .v{width:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-left:1px solid #000;border-right:1px solid #000;touch-action:none;cursor:ns-resize}
+.bpm .v .mono{font-size:15px;line-height:1}
+.bpm .v .lbl{font-size:7px;margin-top:2px}
+.lay{display:flex;gap:4px}
+.lay .btn{min-width:38px;padding:0 6px}
+#recOut{min-width:52px}
+
+/* ---- pestañas ---- */
+.tab{display:none}
+body[data-tab="sample"] .tab-sample,
+body[data-tab="perform"] .tab-perform,
+body[data-tab="fx"] .tab-fx{display:block}
+body[data-mode="grain"] .only-sample,
+body[data-mode="sample"] .only-grain{display:none !important}
+.sl{display:none}
+body[data-slice="trans"] .sl-trans,
+body[data-slice="beat"] .sl-beat,
+body[data-slice="region"] .sl-region,
+body[data-slice="manual"] .sl-manual{display:block}
+nav#tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid #000;
+  display:grid;grid-template-columns:repeat(3,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav#tabs button{height:var(--nav);border:0;border-right:1px solid #000;font-size:11px;letter-spacing:.26em;font-weight:700}
+nav#tabs button:last-child{border-right:0}
+nav#tabs button.on{background:#000;color:#fff}
+
+/* ---- secciones ---- */
+section{border-bottom:1px solid #000;padding:16px 16px 20px}
+h2{font-size:10px;letter-spacing:.26em;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;gap:8px}
+h2 .n{font-family:var(--mono);font-weight:400;letter-spacing:.04em;text-align:right}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.hint{font-size:10px;line-height:1.5;margin-top:10px;letter-spacing:.02em}
+.small{font-size:10px}
+.sub{font-size:8px;letter-spacing:.24em;font-weight:700;margin:14px 0 5px}
+.rl{font-size:8px;letter-spacing:.24em;font-weight:700;margin:12px 0 4px;display:flex;justify-content:space-between}
+
+/* ---- faders verticales ---- */
+.faders{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:16px 6px;margin-top:14px}
+.fader{display:flex;flex-direction:column;align-items:center;gap:7px}
+.fader .fl{font-size:9px;letter-spacing:.18em;font-weight:700}
+.ft{position:relative;width:34px;height:124px;border:1px solid #000;touch-action:none;cursor:ns-resize}
+.ft .fs{position:absolute;left:50%;top:8px;bottom:8px;width:1px;background:#000;transform:translateX(-50%)}
+.ft .fc{position:absolute;left:-6px;right:-6px;height:12px;background:#000}
+.fader .fv{font-family:var(--mono);font-size:10px;white-space:nowrap}
+.fader.dis .ft{border-style:dashed;cursor:default}
+.fader.dis .fs{display:none}
+.fader.dis .fc{background:#fff;border:1px solid #000}
+
+/* ---- segmentados ---- */
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg3,.seg4,.seg5,.seg6{display:grid;gap:4px}
+.seg3{grid-template-columns:repeat(3,1fr)}
+.seg4{grid-template-columns:repeat(4,1fr)}
+.seg5{grid-template-columns:repeat(5,1fr)}
+.seg6{grid-template-columns:repeat(6,1fr)}
+.seg3 .btn,.seg4 .btn,.seg5 .btn,.seg6 .btn{min-width:0;width:100%;padding:0 2px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ---- canvas ---- */
+canvas{display:block;width:100%;background:#fff}
+#wave{height:160px;border:1px solid #000;margin-top:12px;touch-action:none}
+#env{height:64px;border:1px solid #000}
+#mx{height:300px;border:1px solid #000;touch-action:none;margin-top:10px}
+
+/* ---- secuenciador ---- */
+.g16{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:2px}
+.g16 > :nth-child(4n):not(:last-child){margin-right:3px}
+.step{height:36px;min-width:0;padding:0;font-family:var(--mono);font-size:9px}
+.step.on{background:#000;color:#fff}
+.step.out{border-style:dashed}
+.step.out.on{background:repeating-linear-gradient(135deg,#000 0 2px,#fff 2px 5px);color:#000}
+.ph div{height:5px}
+.ph div.on{background:#000}
+#lane{touch-action:none}
+.cell{height:86px;border:1px solid #000;position:relative;overflow:hidden}
+.cell .bar{position:absolute;left:0;right:0;bottom:0;background:#000}
+.cell.off .bar{background:#fff;border-top:2px solid #000}
+.cell.out{border-style:dashed}
+.cell .sn{position:absolute;top:3px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:8px;color:#fff;mix-blend-mode:difference}
+.len{display:flex;height:30px;border:1px solid #000;margin-left:auto}
+.len button{border:0;width:30px;height:100%;font-size:14px}
+.len .v{min-width:58px;display:flex;align-items:center;justify-content:center;gap:5px;border-left:1px solid #000;border-right:1px solid #000}
+
+/* ---- LFO ---- */
+.lfo + .lfo{border-top:1px solid #000;margin-top:18px;padding-top:16px}
+.lfohead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.lfoind{flex:1;max-width:160px;height:10px;border:1px solid #000;position:relative}
+.lfoind div{position:absolute;top:0;bottom:0;width:6px;background:#000}
+.lfo .divs{display:none}
+.lfo.sync .divs{display:block}
+
+/* ---- teclado ---- */
+.kbar{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.kbar .sp{flex:1}
+#octV{width:30px;text-align:center;font-family:var(--mono);font-size:11px}
+.piano{position:relative;height:118px;display:flex;touch-action:none}
+.wk{flex:1;height:100%;border:1px solid #000;border-right:0;background:#fff;display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:5px;font-family:var(--mono);font-size:8px}
+.wk:last-of-type{border-right:1px solid #000}
+.wk.on{background:#000;color:#fff}
+.bk{position:absolute;top:0;height:58%;background:#000;border:1px solid #000;z-index:2;color:#fff;font-family:var(--mono);font-size:7px;
+  display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
+.bk.on{background:#fff;color:#000}
+
+footer{padding:18px 16px;font-size:9px;letter-spacing:.26em;font-weight:600}
+
+@media (min-width:760px){
+  main{max-width:760px;margin:0 auto;border-left:1px solid #000;border-right:1px solid #000}
+  header .inner{max-width:760px;margin:0 auto}
+  nav#tabs{padding-left:calc(50% - 380px);padding-right:calc(50% - 380px)}
+}
+</style>
+</head>
+<body data-tab="sample" data-mode="grain" data-slice="trans">
+
+<!-- =========================================================
+     PANTALLA DE INICIO (desbloquea el audio con un toque)
+     ========================================================= -->
+<div id="start">
+  <div class="big">ACID<br>PLASTIC<br>GRAINS</div>
+  <div class="line"></div>
+  <button id="startBtn" class="btn" type="button">TAP TO START</button>
+  <p>Sintetizador granular · Web Audio.<br>En iPhone, si no se oye nada, sube el volumen y revisa el interruptor de silencio.</p>
+</div>
+
+<!-- =========================================================
+     CABECERA · TRANSPORTE · CAPA ACTIVA
+     ========================================================= -->
+<header><div class="inner">
+  <div class="title"><h1>ACID PLASTIC GRAINS</h1><div id="status">—</div></div>
+  <div class="transport">
+    <button id="play" class="btn" type="button">PLAY</button>
+    <div class="bpm">
+      <button id="bpmDn" type="button">−</button>
+      <div class="v" id="bpmV"><span class="mono" id="bpmN">120</span><span class="lbl">BPM</span></div>
+      <button id="bpmUp" type="button">+</button>
+    </div>
+    <button id="recOut" class="btn" type="button">REC</button>
+    <span class="sp"></span>
+    <div class="lay"><button id="layA" class="btn" type="button">A</button><button id="layB" class="btn" type="button">B</button></div>
+  </div>
+</div></header>
+
+<main>
+<!-- =========================================================
+     PESTAÑA SAMPLE
+     ========================================================= -->
+<div class="tab tab-sample">
+  <section>
+    <h2><span>SAMPLE · <span id="layName">A</span></span><span class="n" id="regTxt"></span></h2>
+    <div class="row">
+      <button id="micRec" class="btn" type="button">REC MIC</button>
+      <button id="loadBtn" class="btn" type="button">LOAD</button>
+      <button id="initS" class="btn" type="button">INIT</button>
+      <input type="file" id="file" accept="audio/*" style="display:none">
+      <span class="mono small" id="sName"></span>
+    </div>
+    <div class="sub">ENGINE</div>
+    <div id="modeSeg"></div>
+    <canvas id="wave"></canvas>
+    <p class="hint only-grain">Arrastra S y E para fijar la región. Las marcas de abajo son los pasos activos y la línea discontinua es POS, la posición que tocan el teclado y el matrix.</p>
+    <p class="hint only-sample">S y E se arrastran desde la franja superior. Arrastra un marcador para mover el inicio de un slice (pasa a MANUAL). En MANUAL, toca la onda para añadir un marcador y doble toque sobre él para quitarlo. Toca dentro de un slice para escucharlo.</p>
+  </section>
+
+  <section>
+    <h2><span id="s2t">GRAIN</span><span class="n" id="sliceInfo"></span></h2>
+    <div class="only-grain"><div class="faders" id="fGrain"></div></div>
+    <div class="only-sample" id="slBox"></div>
+    <div class="faders" id="fCommon"></div>
+  </section>
+
+  <section>
+    <h2><span>ENVELOPE</span><span class="n" id="envTxt">por grano</span></h2>
+    <canvas id="env"></canvas>
+    <div class="only-grain"><div class="faders" id="fEnvG"></div></div>
+    <div class="only-sample"><div class="faders" id="fEnvS"></div></div>
+  </section>
+
+  <section>
+    <h2>FILTER</h2>
+    <div class="faders" id="fFilt"></div>
+  </section>
+
+  <section>
+    <h2>LFO</h2>
+    <div id="lfos"></div>
+  </section>
+</div>
+
+<!-- =========================================================
+     PESTAÑA PERFORMANCE
+     ========================================================= -->
+<div class="tab tab-perform">
+  <section>
+    <h2><span>SEQUENCER · <span id="seqLay">A</span></span><span class="n" id="seqTxt"></span></h2>
+    <div class="row">
+      <button id="rnd" class="btn sm" type="button">RND</button>
+      <button id="clr" class="btn sm" type="button">CLR</button>
+      <button id="muteBtn" class="btn sm" type="button">MUTE</button>
+      <div class="len"><button id="lenDn" type="button">−</button><div class="v"><span class="lbl">LEN</span><span class="mono" id="lenV">16</span></div><button id="lenUp" type="button">+</button></div>
+    </div>
+    <div class="rl"><span>STEP</span><span>mantén = rnd</span></div>
+    <div class="g16" id="steps"></div>
+    <div class="g16 ph" id="phs" style="margin-top:3px"></div>
+    <div class="rl"><span id="laneLbl">POS</span><span>arrastra para dibujar</span></div>
+    <div class="g16" id="lane"></div>
+  </section>
+
+  <section>
+    <h2><span>MATRIX</span><span class="n" id="mxTxt">X = POSICIÓN</span></h2>
+    <div class="sub" style="margin-top:0">EJE Y</div>
+    <div class="row" style="flex-wrap:nowrap"><div id="mxSeg" style="flex:1"></div><button id="mxHold" class="btn sm" type="button">HOLD</button></div>
+    <canvas id="mx"></canvas>
+  </section>
+
+  <section>
+    <h2><span>KEYS</span><span class="n" id="kbTxt"></span></h2>
+    <div class="kbar">
+      <button id="octDn" class="btn sm" type="button">−</button>
+      <span id="octV">0</span>
+      <button id="octUp" class="btn sm" type="button">+</button>
+      <span class="sp"></span>
+      <div class="only-sample" id="kbModeSeg"></div>
+    </div>
+    <div class="piano" id="piano"></div>
+  </section>
+</div>
+
+<!-- =========================================================
+     PESTAÑA FX
+     ========================================================= -->
+<div class="tab tab-fx">
+  <section>
+    <h2><span>DELAY</span><span class="n" id="dlyTxt"></span></h2>
+    <div id="dMode"></div>
+    <div class="sub">DIVISION</div>
+    <div id="dDiv"></div>
+    <div class="faders" id="fDly"></div>
+  </section>
+
+  <section>
+    <h2><span>REVERB · PLATE</span><span class="n" id="revTxt"></span></h2>
+    <div class="row"><button id="eco" class="btn sm" type="button">ECO</button><span class="small">modo de bajo consumo (convolución)</span></div>
+    <div class="faders" id="fRev"></div>
+  </section>
+
+  <section>
+    <h2><span>OUTPUT</span><span class="n" id="outTxt"></span></h2>
+    <div class="sub" style="margin-top:0">COLA AL PARAR REC</div>
+    <div id="tailSeg"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="save" class="btn" type="button" disabled>SAVE WAV</button>
+      <button id="share" class="btn" type="button" disabled hidden>SHARE</button>
+    </div>
+    <div class="faders" id="fOut"></div>
+  </section>
+  <footer>ACIDPLASTIC.COM</footer>
+</div>
+</main>
+
+<nav id="tabs">
+  <button type="button" data-t="sample">SAMPLE</button>
+  <button type="button" data-t="perform">PERFORM</button>
+  <button type="button" data-t="fx">FX</button>
+</nav>
+
+<!-- =========================================================
+     AUDIOWORKLET (se carga desde aquí vía Blob URL)
+     · plate-reverb: algoritmo de plate de Dattorro
+     · pcm-rec: captura PCM para micrófono y exportación WAV
+     ========================================================= -->
+<script type="text/plain" id="worklet-src">
+const TAU = Math.PI * 2;
+
+class Line {
+  constructor(n){ this.len = n; this.b = new Float32Array(n); this.w = 0; }
+  write(v){ this.b[this.w] = v; if (++this.w >= this.len) this.w = 0; }
+  read(d){ let i = this.w - d; if (i < 0) i += this.len; return this.b[i]; }
+  readF(d){ const i = Math.floor(d), f = d - i; const a = this.read(i), b = this.read(i + 1); return a + (b - a) * f; }
+}
+// Allpass Schroeder: y = -g·x + d ; buffer ← x + g·y
+function ap(line, N, g, x){ const d = line.read(N); const y = -g * x + d; line.write(x + g * y); return y; }
+function apF(line, N, g, x){ const d = line.readF(N); const y = -g * x + d; line.write(x + g * y); return y; }
+
+class PlateReverb extends AudioWorkletProcessor {
+  static get parameterDescriptors(){
+    return [
+      { name:'decay',     defaultValue:0.6,    minValue:0, maxValue:0.98, automationRate:'k-rate' },
+      { name:'damping',   defaultValue:0.3,    minValue:0, maxValue:0.99, automationRate:'k-rate' },
+      { name:'bandwidth', defaultValue:0.9995, minValue:0, maxValue:1,    automationRate:'k-rate' }
+    ];
+  }
+  constructor(){
+    super();
+    const k = sampleRate / 29761, r = n => Math.max(1, Math.round(n * k));
+    this.n = { i1:r(142), i2:r(107), i3:r(379), i4:r(277),
+               aL1:r(672), dL1:r(4453), aL2:r(1800), dL2:r(3720),
+               aR1:r(908), dR1:r(4217), aR2:r(2656), dR2:r(3163) };
+    this.exc = 16 * k;
+    this.l = {};
+    for (const key in this.n) this.l[key] = new Line(this.n[key] + Math.ceil(this.exc) + 4);
+    // Tomas de salida (Dattorro, 1997)
+    this.t = { a:r(266), b:r(2974), c:r(1913), d:r(1996), e:r(1990), f:r(187), g:r(1066),
+               h:r(353), i:r(3627), j:r(1228), k:r(2673), l:r(2111), m:r(335), n:r(121) };
+    this.bw = 0; this.dmL = 0; this.dmR = 0; this.ph = 0; this.phInc = 0.8 / sampleRate;
+    this.active = true;
+    this.port.onmessage = e => { if (e.data && 'active' in e.data) this.active = !!e.data.active; };
+  }
+  process(inputs, outputs, params){
+    const out = outputs[0], oL = out[0], oR = out[1] || out[0];
+    if (!this.active){ oL.fill(0); if (oR !== oL) oR.fill(0); return true; }
+    const inp = inputs[0], iL = inp && inp[0], iR = inp && (inp[1] || inp[0]);
+    const decay = params.decay[0], damp = params.damping[0], bw = params.bandwidth[0];
+    const n = this.n, l = this.l, t = this.t, exc = this.exc;
+    for (let s = 0; s < oL.length; s++){
+      let x = iL ? (iL[s] + iR[s]) * 0.5 : 0;
+      this.bw += bw * (x - this.bw);
+      x = this.bw;
+      x = ap(l.i1, n.i1, 0.75, x);
+      x = ap(l.i2, n.i2, 0.75, x);
+      x = ap(l.i3, n.i3, 0.625, x);
+      x = ap(l.i4, n.i4, 0.625, x);
+      this.ph += this.phInc; if (this.ph >= 1) this.ph -= 1;
+      const m1 = exc * (0.5 + 0.5 * Math.sin(TAU * this.ph));
+      const m2 = exc * (0.5 + 0.5 * Math.cos(TAU * this.ph));
+      const endL = l.dL2.read(n.dL2), endR = l.dR2.read(n.dR2);
+      // mitad izquierda del tanque
+      let a = apF(l.aL1, n.aL1 + m1, -0.7, x + endR * decay);
+      const dl = l.dL1.read(n.dL1); l.dL1.write(a);
+      this.dmL = dl * (1 - damp) + this.dmL * damp;
+      let b = ap(l.aL2, n.aL2, 0.5, this.dmL * decay);
+      l.dL2.write(b);
+      // mitad derecha del tanque
+      a = apF(l.aR1, n.aR1 + m2, -0.7, x + endL * decay);
+      const dr = l.dR1.read(n.dR1); l.dR1.write(a);
+      this.dmR = dr * (1 - damp) + this.dmR * damp;
+      b = ap(l.aR2, n.aR2, 0.5, this.dmR * decay);
+      l.dR2.write(b);
+      const yl = l.dR1.read(t.a) + l.dR1.read(t.b) - l.aR2.read(t.c) + l.dR2.read(t.d)
+               - l.dL1.read(t.e) - l.aL2.read(t.f) - l.dL2.read(t.g);
+      const yr = l.dL1.read(t.h) + l.dL1.read(t.i) - l.aL2.read(t.j) + l.dL2.read(t.k)
+               - l.dR1.read(t.l) - l.aR2.read(t.m) - l.dR2.read(t.n);
+      oL[s] = yl * 0.6;
+      if (oR !== oL) oR[s] = yr * 0.6;
+    }
+    // evita denormales cuando la cola se apaga
+    if (Math.abs(this.dmL) < 1e-20) this.dmL = 0;
+    if (Math.abs(this.dmR) < 1e-20) this.dmR = 0;
+    if (Math.abs(this.bw)  < 1e-20) this.bw  = 0;
+    return true;
+  }
+}
+
+class PcmRec extends AudioWorkletProcessor {
+  constructor(){
+    super();
+    this.on = false; this.size = 4096; this.i = 0;
+    this.bl = new Float32Array(this.size); this.br = new Float32Array(this.size);
+    this.port.onmessage = e => {
+      if (e.data === 'start'){ this.on = true; this.i = 0; }
+      else if (e.data === 'stop'){ if (this.i > 0) this.flush(); this.on = false; this.port.postMessage({ type:'done' }); }
+    };
+  }
+  flush(){ this.port.postMessage({ type:'data', l:this.bl.slice(0, this.i), r:this.br.slice(0, this.i) }); this.i = 0; }
+  process(inputs){
+    if (!this.on) return true;
+    const inp = inputs[0], L = inp && inp[0], R = inp && (inp[1] || inp[0]);
+    const len = L ? L.length : 128;
+    for (let s = 0; s < len; s++){
+      this.bl[this.i] = L ? L[s] : 0;
+      this.br[this.i] = R ? R[s] : 0;
+      if (++this.i >= this.size) this.flush();
+    }
+    return true;
+  }
+}
+
+registerProcessor('plate-reverb', PlateReverb);
+registerProcessor('pcm-rec', PcmRec);
+</script>
+
+<script>
+'use strict';
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const DPR = () => Math.min(2, window.devicePixelRatio || 1);
+const UIFONT = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+function h(tag, cls, txt){ const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function btn(label, cls = 'btn'){ const b = h('button', cls, label); b.type = 'button'; return b; }
+let statusTimer = null;
+function status(msg, err = false, ms = 0){
+  const el = $('#status'); el.textContent = msg; el.classList.toggle('err', !!err);
+  clearTimeout(statusTimer);
+  if (ms) statusTimer = setTimeout(() => status(A.ctx ? 'READY' : '—'), ms);
+}
+const fmtMs  = v => v < 1000 ? Math.round(v) + 'ms' : (v / 1000).toFixed(2) + 's';
+const fmtPct = v => Math.round(v) + '%';
+const fmtHz  = v => v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 1 : 2) + 'k' : Math.round(v) + 'Hz';
+const fmtClk = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+function concat(chunks){ let n = 0; for (const c of chunks) n += c.length; const o = new Float32Array(n); let p = 0; for (const c of chunks){ o.set(c, p); p += c.length; } return o; }
+
+/* =========================================================
+   CONSTANTES
+   ========================================================= */
+const DIVS    = [['1/4',1],['1/8',.5],['1/8D',.75],['1/8T',1/3],['1/16',.25],['1/16D',.375],['1/16T',1/6],['1/32',.125]];
+const LDIV    = [['4/1',16],['2/1',8],['1/1',4],['1/2',2],['1/4',1],['1/8',.5],['1/16',.25],['1/32',.125],['1/4T',2/3],['1/8T',1/3],['1/4D',1.5],['1/8D',.75]];
+const BEATDIV = [['1/1',4],['1/2',2],['1/4',1],['1/8',.5],['1/16',.25],['1/32',.125]];
+const REGN    = [1, 2, 4, 8, 16, 32];
+const BY      = ['trans', 'beat', 'region', 'manual'];
+const WAVES   = ['SIN','TRI','SQR','SAW','RND'];
+const TG      = [['size','SIZE'],['spray','SPRY'],['dens','DENS'],['pos','POS'],['pitch','PTCH'],['cut','CUT'],['amp','AMP'],['atk','ATK']];
+const GRAIN_ONLY = new Set(['size','spray','dens','pos']);
+const MXT     = [['pitch','PTCH'],['cut','CUT'],['size','SIZE'],['dens','DENS'],['spray','SPRY']];
+const MAXV = 64;        // granos simultáneos (todas las capas)
+const LOOK = 0.12;      // horizonte del secuenciador (s)
+const LOOKM = 0.06;     // horizonte de la automatización de LFO (s)
+
+/* =========================================================
+   ESTADO · CAPAS
+   Cada capa tiene su muestra, motor (grain/sample), envolvente,
+   filtros, LFOs, región, slices y patrón de secuenciador.
+   ========================================================= */
+function mkLayer(idx){
+  return {
+    idx, name: idx ? 'B' : 'A', buf: null, sname: '', mode: idx ? 'sample' : 'grain',
+    vol: 80, mute: false, pitch: 0, pan: idx ? 0 : 40, gate: 1,
+    grain: { size: 90, spray: 6, dens: 24, pos: 25 },
+    env:   { a: 30, d: 20, s: 70, r: 40 },
+    smp:   { by: 'trans', sens: 55, beat: 3, reg: 3, manual: [], trig: true, poly: true },
+    senv:  { a: 2, d: 300, s: 100, r: 30 },
+    hpf: { f: 20, q: 0 },
+    lpf: { f: idx ? 20000 : 14000, q: idx ? 0 : 2 },
+    lfo: [
+      { sync: false, div: 4, rate: 0.35, depth: idx ? 0 : 25, wave: 0, seed: 11 + idx * 7, tg: { size:false, spray:false, dens:false, pos:false, pitch:false, cut:true, amp:false, atk:false } },
+      { sync: true,  div: 6, rate: 2.2,  depth: 0,  wave: 4, seed: 57 + idx * 7, tg: { size:true,  spray:false, dens:false, pos:false, pitch:false, cut:false, amp:false, atk:false } }
+    ],
+    region: { s: 0, e: 1 },
+    steps: Array.from({ length: 16 }, (_, i) => ({
+      on:  idx ? false : [0, 3, 6, 8, 10, 12, 14].includes(i),
+      pos: idx ? (i + 0.5) / 16 : ((i * 0.381966 + 0.07) % 1)
+    })),
+    len: 16,
+    slices: [], odf: null, sel: 0, voices: [], wcache: null, nodes: null
+  };
+}
+const LS = [mkLayer(0), mkLayer(1)];
+let CUR = 0;
+const L = () => LS[CUR];
+
+const S = {
+  bpm: 120, playing: false, tail: 4, master: 85,
+  kbOct: 0, kbMode: 0,                      // 0 = SLICE, 1 = PITCH (modo sample)
+  dly: { sync: true, div: 2, time: 300, fb: 40, tone: 5000, mix: 30 },
+  rev: { decay: 2.4, pre: 12, damp: 35, mix: 22, eco: false },
+  mx:  { tgt: 0, hold: false }
+};
+const A = {
+  ctx: null, worklet: false, plate: null, active: 0, emitters: [], uiQ: [], grainVis: [],
+  modT: 0, nextStep: 0, gStep: 0, cur: [-1, -1], clock: { b0: 0, t0: 0 },
+  micRec: null, outRec: null, lastWav: null
+};
+// estado del matrix
+const M = { active: false, layer: 0, x: 0.5, y: 0.5, em: null, v: null, slice: -1, down: false };
+
+/* =========================================================
+   RELOJ DE TEMPO (para LFO sincronizado)
+   ========================================================= */
+const stepDur = () => 60 / S.bpm / 4;
+function beatAt(t){ return A.clock.b0 + (t - A.clock.t0) * S.bpm / 60; }
+
+/* =========================================================
+   AUDIO · INICIALIZACIÓN (solo tras un toque del usuario)
+   ========================================================= */
+function setSession(type){ try { if (navigator.audioSession) navigator.audioSession.type = type; } catch (e) {} }
+
+async function initAudio(){
+  if (A.ctx){ A.ctx.resume(); return true; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC){ status('WEB AUDIO NO DISPONIBLE', true); return false; }
+  setSession('playback');
+  let ctx;
+  try { ctx = new AC({ latencyHint: 'interactive' }); } catch (e) { ctx = new AC(); }
+  A.ctx = ctx;
+  const sb = ctx.createBufferSource(); sb.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); sb.connect(ctx.destination); sb.start(0);
+  const resumeP = ctx.resume();
+  A.worklet = await loadWorklets(ctx);
+  buildGraph();
+  applyAll();
+  setSample(LS[0], makeInitTonal(), 'INIT');
+  setSample(LS[1], makeInitDrums(), 'INIT BEAT');
+  setInterval(tick, 25);
+  try { await resumeP; } catch (e) {}
+  refreshUI();
+  status(A.worklet ? 'READY' : 'READY · SOLO MODO ECO');
+  return true;
+}
+
+async function loadWorklets(ctx){
+  if (!ctx.audioWorklet || typeof AudioWorkletNode === 'undefined') return false;
+  const code = document.getElementById('worklet-src').textContent;
+  try {
+    const url = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+    await ctx.audioWorklet.addModule(url);
+    return true;
+  } catch (e) {
+    try { await ctx.audioWorklet.addModule('data:application/javascript;charset=utf-8,' + encodeURIComponent(code)); return true; }
+    catch (e2) { console.warn('AudioWorklet no disponible', e2); return false; }
+  }
+}
+
+/* =========================================================
+   AUDIO · GRAFO DE SEÑAL
+   capa A ─ in → HPF → LPF → amp (vol + LFO) → mute ─┐
+   capa B ─ in → HPF → LPF → amp (vol + LFO) → mute ─┤→ fxIn ─┬─ dry ──────────────┐
+                                                     │        └─ delay ping-pong ─ wet ┤→ fxMid ─┬─ dry ─────────────┐
+                                                     │                                         └─ pre → plate ─ wet ┤→ master → limitador → salida
+   ========================================================= */
+function buildGraph(){
+  const c = A.ctx;
+  const G = v => { const g = c.createGain(); g.gain.value = v; return g; };
+  const F = type => { const f = c.createBiquadFilter(); f.type = type; return f; };
+  A.hasPan = typeof c.createStereoPanner === 'function';
+
+  A.fxIn = G(1);
+  for (const Ly of LS){
+    const n = { in: G(1), hp: F('highpass'), lp: F('lowpass'), amp: G(0.7), mute: G(1) };
+    n.in.connect(n.hp).connect(n.lp).connect(n.amp).connect(n.mute).connect(A.fxIn);
+    n.lp.frequency.value = Ly.lpf.f;
+    Ly.nodes = n;
+  }
+
+  // ---- DELAY estéreo ping-pong con tono en el bucle ----
+  A.dlyDry = G(1); A.dlyWet = G(0.5); A.fxMid = G(1); A.dIn = G(1);
+  A.dL = c.createDelay(4); A.dR = c.createDelay(4);
+  A.toneL = F('lowpass'); A.toneR = F('lowpass');
+  A.fbL = G(0.4); A.fbR = G(0.4);
+  A.fxIn.connect(A.dlyDry).connect(A.fxMid);
+  A.fxIn.connect(A.dIn).connect(A.dL);
+  A.dL.connect(A.toneL).connect(A.fbL).connect(A.dR);
+  A.dR.connect(A.toneR).connect(A.fbR).connect(A.dL);
+  const mg = c.createChannelMerger(2);
+  A.dL.connect(mg, 0, 0); A.dR.connect(mg, 0, 1);
+  mg.connect(A.dlyWet).connect(A.fxMid);
+
+  // ---- REVERB plate ----
+  A.revDry = G(1); A.revWet = G(0.3); A.master = G(0.8);
+  A.pre = c.createDelay(1);
+  A.conv = c.createConvolver();
+  A.conv.connect(A.revWet);
+  if (A.worklet){
+    try {
+      A.plate = new AudioWorkletNode(c, 'plate-reverb', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
+      A.plate.connect(A.revWet);
+    } catch (e) { A.plate = null; }
+  }
+  A.fxMid.connect(A.revDry).connect(A.master);
+  A.fxMid.connect(A.pre);
+  A.revWet.connect(A.master);
+
+  // ---- salida con limitador de seguridad ----
+  A.comp = c.createDynamicsCompressor();
+  A.comp.threshold.value = -6; A.comp.knee.value = 6; A.comp.ratio.value = 12;
+  A.comp.attack.value = 0.003; A.comp.release.value = 0.15;
+  A.master.connect(A.comp).connect(c.destination);
+
+  A.sink = G(0); A.sink.connect(c.destination);
+  A.recOut = makeRecorder();
+  A.comp.connect(A.recOut.node);
+  A.modT = c.currentTime;
+}
+
+function applyAll(){ applyMaster(); LS.forEach(applyFilters); LS.forEach(applyMute); applyDelay(); applyRev(); setRevMode(); }
+function applyMaster(){ if (A.ctx) A.master.gain.setTargetAtTime(Math.pow(S.master / 100, 1.5) * 1.1, A.ctx.currentTime, 0.03); }
+function applyMute(Ly){ if (A.ctx) Ly.nodes.mute.gain.setTargetAtTime(Ly.mute ? 0 : 1, A.ctx.currentTime, 0.01); }
+const layerGain = Ly => Math.pow(Ly.vol / 100, 1.5) * 1.15;
+
+/* =========================================================
+   FILTROS (HPF directo; el corte del LPF y el volumen los
+   automatiza el scheduler para poder modularlos con LFO/matrix)
+   ========================================================= */
+function applyFilters(Ly){
+  if (!A.ctx) return;
+  const t = A.ctx.currentTime, n = Ly.nodes;
+  n.hp.frequency.setTargetAtTime(Ly.hpf.f, t, 0.02);
+  n.hp.Q.setTargetAtTime(Ly.hpf.q, t, 0.02);
+  n.lp.Q.setTargetAtTime(Ly.lpf.q, t, 0.02);
+}
+
+/* =========================================================
+   DELAY (sync / free, feedback, tono, dry/wet)
+   ========================================================= */
+function delayTimeSec(){ return S.dly.sync ? DIVS[S.dly.div][1] * 60 / S.bpm : S.dly.time / 1000; }
+function applyDelay(){
+  $('#dlyTxt').textContent = (S.dly.sync ? DIVS[S.dly.div][0] + ' · ' : 'FREE · ') + fmtMs(delayTimeSec() * 1000);
+  if (!A.ctx) return;
+  const t = A.ctx.currentTime, dt = delayTimeSec(), fb = S.dly.fb / 100, m = S.dly.mix / 100;
+  A.dL.delayTime.setTargetAtTime(dt, t, 0.04);
+  A.dR.delayTime.setTargetAtTime(dt, t, 0.04);
+  A.fbL.gain.setTargetAtTime(fb, t, 0.02);
+  A.fbR.gain.setTargetAtTime(fb, t, 0.02);
+  A.toneL.frequency.setTargetAtTime(S.dly.tone, t, 0.02);
+  A.toneR.frequency.setTargetAtTime(S.dly.tone, t, 0.02);
+  A.dlyDry.gain.setTargetAtTime(Math.min(1, 2 * (1 - m)), t, 0.02);
+  A.dlyWet.gain.setTargetAtTime(Math.min(1, 2 * m), t, 0.02);
+}
+
+/* =========================================================
+   REVERB PLATE (Dattorro en worklet · convolución en modo ECO)
+   ========================================================= */
+let irTimer = null;
+function plateDecay(sec){ return clamp(Math.pow(10, -0.545 / sec), 0, 0.95); }
+function applyRev(){
+  $('#revTxt').textContent = (S.rev.eco || !A.plate ? 'ECO · ' : 'DATTORRO · ') + S.rev.decay.toFixed(1) + 's';
+  if (!A.ctx) return;
+  const t = A.ctx.currentTime, m = S.rev.mix / 100;
+  A.pre.delayTime.setTargetAtTime(S.rev.pre / 1000, t, 0.02);
+  A.revDry.gain.setTargetAtTime(Math.min(1, 2 * (1 - m)), t, 0.02);
+  A.revWet.gain.setTargetAtTime(Math.min(1, 2 * m), t, 0.02);
+  if (A.plate){
+    A.plate.parameters.get('decay').setTargetAtTime(plateDecay(S.rev.decay), t, 0.05);
+    A.plate.parameters.get('damping').setTargetAtTime((S.rev.damp / 100) * 0.85, t, 0.05);
+  }
+  if (S.rev.eco || !A.plate) scheduleIR();
+}
+function setRevMode(){
+  if (!A.ctx) return;
+  const eco = S.rev.eco || !A.plate;
+  try { A.pre.disconnect(); } catch (e) {}
+  if (eco){
+    if (!A.conv.buffer) A.conv.buffer = makeIR(S.rev.decay, S.rev.damp / 100);
+    A.pre.connect(A.conv);
+    if (A.plate) A.plate.port.postMessage({ active: false });
+  } else {
+    A.pre.connect(A.plate);
+    A.plate.port.postMessage({ active: true });
+  }
+  $('#eco').classList.toggle('on', eco);
+  applyRev();
+}
+function scheduleIR(){
+  clearTimeout(irTimer);
+  irTimer = setTimeout(() => { if (A.ctx) A.conv.buffer = makeIR(S.rev.decay, S.rev.damp / 100); }, 220);
+}
+function makeIR(sec, damp){
+  const c = A.ctx, sr = c.sampleRate, len = Math.max(1, Math.floor(sr * Math.min(sec + 0.3, 9)));
+  const b = c.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++){
+    const d = b.getChannelData(ch); let lp = 0;
+    for (let i = 0; i < len; i++){
+      const t = i / sr;
+      const env = Math.pow(10, -3 * t / sec);
+      const k = clamp(0.04 + damp * 0.9 * Math.min(1, t / sec), 0, 0.97);
+      lp += (1 - k) * ((Math.random() * 2 - 1) - lp);
+      d[i] = lp * env;
+    }
+  }
+  return b;
+}
+
+/* =========================================================
+   CAPTURA PCM (worklet, con ScriptProcessor de reserva)
+   ========================================================= */
+function makeRecorder(){
+  const c = A.ctx;
+  if (A.worklet){
+    try {
+      const node = new AudioWorkletNode(c, 'pcm-rec', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2, channelCountMode: 'explicit' });
+      node.connect(A.sink);
+      let Lc = [], Rc = [], done = null;
+      node.port.onmessage = e => {
+        const d = e.data;
+        if (d.type === 'data'){ Lc.push(d.l); Rc.push(d.r); }
+        else if (d.type === 'done' && done){ const res = done; done = null; res({ L: concat(Lc), R: concat(Rc) }); Lc = []; Rc = []; }
+      };
+      return {
+        node,
+        start(){ Lc = []; Rc = []; node.port.postMessage('start'); },
+        stop(){ return new Promise(res => { done = res; node.port.postMessage('stop'); }); }
+      };
+    } catch (e) { console.warn(e); }
+  }
+  const sp = c.createScriptProcessor(4096, 2, 2); let on = false, Lc = [], Rc = [];
+  sp.onaudioprocess = e => {
+    if (!on) return;
+    const ib = e.inputBuffer;
+    Lc.push(new Float32Array(ib.getChannelData(0)));
+    Rc.push(new Float32Array(ib.getChannelData(ib.numberOfChannels > 1 ? 1 : 0)));
+  };
+  sp.connect(A.sink);
+  return { node: sp, start(){ Lc = []; Rc = []; on = true; }, stop(){ on = false; return Promise.resolve({ L: concat(Lc), R: concat(Rc) }); } };
+}
+
+/* =========================================================
+   MUESTRA · CARGA, MUESTRAS INICIALES, GRABACIÓN DE MICRO
+   ========================================================= */
+function setSample(Ly, buf, name){
+  Ly.buf = buf; Ly.sname = name; Ly.region.s = 0; Ly.region.e = 1; Ly.smp.manual = []; Ly.sel = 0;
+  Ly.odf = computeODF(buf);
+  renderCache(Ly);
+  updSlices(Ly);
+  if (Ly === L()) refreshUI();
+}
+
+// capa A: tono rico, acorde con vibrato y golpes metálicos
+function makeInitTonal(){
+  const c = A.ctx, sr = c.sampleRate, n = Math.floor(sr * 3), b = c.createBuffer(1, n, sr), d = b.getChannelData(0);
+  let peak = 0;
+  for (let i = 0; i < n; i++){
+    const t = i / sr, seg = Math.floor(t), tt = t - seg;
+    const fade = Math.min(1, tt * 200, (1 - tt) * 200);
+    let v = 0;
+    if (seg === 0){
+      const e = Math.exp(-tt * 2.2) * (1 - Math.exp(-tt * 300));
+      for (let k = 1; k <= 12; k++) v += Math.sin(2 * Math.PI * 110 * k * tt) / k * (k % 2 ? 1 : 0.55);
+      v *= 0.4 * e;
+    } else if (seg === 1){
+      const vib = 1 + Math.sin(2 * Math.PI * 5.5 * tt) * 0.004;
+      for (const f of [261.6, 311.1, 392, 466.2]) v += Math.sin(2 * Math.PI * f * tt * vib);
+      v *= 0.2 * Math.sin(Math.PI * tt);
+    } else {
+      const hit = (tt * 8) % 1, e = Math.exp(-hit * 10);
+      for (const f of [523, 1187, 1730, 2617]) v += Math.sin(2 * Math.PI * f * tt) * 0.25;
+      v = (v + (Math.random() * 2 - 1) * 0.35) * e;
+    }
+    v *= fade; d[i] = v; peak = Math.max(peak, Math.abs(v));
+  }
+  if (peak > 0) for (let i = 0; i < n; i++) d[i] *= 0.9 / peak;
+  return b;
+}
+
+// capa B: un compás de batería sintética a 120 BPM (útil para probar el slicing)
+function makeInitDrums(){
+  const c = A.ctx, sr = c.sampleRate, n = Math.floor(sr * 2), b = c.createBuffer(1, n, sr), d = b.getChannelData(0);
+  const six = 0.125;
+  const add = (t0, dur, fn) => { const s0 = Math.floor(t0 * sr), m = Math.floor(dur * sr); const st = {}; for (let i = 0; i < m && s0 + i < n; i++) d[s0 + i] += fn(i / sr, st); };
+  const kick = (tt, st) => { st.ph = (st.ph || 0) + 2 * Math.PI * (44 + 120 * Math.exp(-tt * 30)) / sr; return Math.sin(st.ph) * Math.exp(-tt * 6.5) * 0.95 + (tt < 0.003 ? (Math.random() - 0.5) * 0.4 : 0); };
+  const snare = (tt, st) => { const x = Math.random() * 2 - 1, hp = x - (st.p || 0); st.p = x; return hp * Math.exp(-tt * 16) * 0.42 + Math.sin(2 * Math.PI * 185 * tt) * Math.exp(-tt * 22) * 0.5; };
+  const hat = (tt, st) => { const x = Math.random() * 2 - 1, d1 = x - (st.a || 0), d2 = d1 - (st.b || 0); st.a = x; st.b = d1; return d2 * Math.exp(-tt * 55) * 0.16; };
+  const perc = tt => Math.sin(2 * Math.PI * 760 * tt) * Math.exp(-tt * 30) * 0.45;
+  [0, 7, 8].forEach(s => add(s * six, 0.5, kick));
+  [4, 12].forEach(s => add(s * six, 0.32, snare));
+  [2, 6, 10, 14].forEach(s => add(s * six, 0.09, hat));
+  [11, 15].forEach(s => add(s * six, 0.2, perc));
+  let peak = 0; for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(d[i]));
+  if (peak > 0) for (let i = 0; i < n; i++) d[i] *= 0.9 / peak;
+  return b;
+}
+
+function decode(ab){
+  return new Promise((res, rej) => {
+    const p = A.ctx.decodeAudioData(ab, res, rej);
+    if (p && p.then) p.then(res, rej);
+  });
+}
+async function loadFile(f){
+  if (!f || !A.ctx) return;
+  const Ly = L();
+  status('DECODIFICANDO…');
+  try {
+    const buf = await decode(await f.arrayBuffer());
+    setSample(Ly, buf, f.name.replace(/\.[^.]+$/, '').slice(0, 22).toUpperCase());
+    status('READY');
+  } catch (e) { status('NO SE PUDO LEER EL ARCHIVO', true, 4000); }
+}
+
+async function micToggle(){
+  if (!A.ctx) return;
+  if (A.micRec) return stopMic();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    status('MICRO NO DISPONIBLE · HACE FALTA HTTPS', true, 5000); return;
+  }
+  let stream;
+  try {
+    setSession('play-and-record');
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  } catch (err) {
+    setSession('playback');
+    const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+    status(denied ? 'PERMISO DE MICRO DENEGADO' : 'ERROR DE MICRO: ' + (err && err.name || '?'), true, 6000);
+    return;
+  }
+  if (A.ctx.state !== 'running') { try { await A.ctx.resume(); } catch (e) {} }
+  const src = A.ctx.createMediaStreamSource(stream);
+  const rec = makeRecorder();
+  src.connect(rec.node);
+  rec.start();
+  A.micRec = { stream, src, rec, layer: CUR, t0: A.ctx.currentTime, auto: setTimeout(() => { if (A.micRec) stopMic(); }, 60000) };
+  $('#micRec').classList.add('on');
+  status('GRABANDO MICRO EN ' + L().name);
+}
+async function stopMic(){
+  const m = A.micRec; if (!m) return; A.micRec = null;
+  clearTimeout(m.auto);
+  const { L: data } = await m.rec.stop();
+  try { m.src.disconnect(); } catch (e) {}
+  try { m.rec.node.disconnect(); } catch (e) {}
+  m.stream.getTracks().forEach(t => t.stop());
+  setSession('playback');
+  const b = $('#micRec'); b.classList.remove('on'); b.textContent = 'REC MIC';
+  const sr = A.ctx.sampleRate;
+  if (data.length < sr * 0.05){ status('GRABACIÓN DEMASIADO CORTA', true, 3000); return; }
+  let peak = 0; for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+  if (peak > 0.0005) for (let i = 0; i < data.length; i++) data[i] *= 0.89 / peak;
+  const buf = A.ctx.createBuffer(1, data.length, sr);
+  buf.getChannelData(0).set(data);
+  setSample(LS[m.layer], buf, 'MIC');
+  status('READY');
+}
+
+/* =========================================================
+   SLICING (transitorios, beat, región, manual)
+   ========================================================= */
+// función de detección de ataques: energía de alta frecuencia cada 5 ms,
+// comparada (en log) con el máximo de los 15 ms anteriores
+function computeODF(buf){
+  const sr = buf.sampleRate, d0 = buf.getChannelData(0), d1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null;
+  const hop = Math.max(1, Math.round(sr * 0.005)), N = Math.floor(d0.length / hop);
+  const e = new Float32Array(N); let prev = 0, maxE = 0;
+  for (let i = 0; i < N; i++){
+    let s = 0;
+    for (let j = i * hop, end = j + hop; j < end; j++){
+      const x = d1 ? (d0[j] + d1[j]) * 0.5 : d0[j];
+      const df = x - prev; prev = x; s += df * df;
+    }
+    e[i] = Math.sqrt(s / hop); if (e[i] > maxE) maxE = e[i];
+  }
+  const odf = new Float32Array(N), eps = maxE * 1e-3 + 1e-9; let mx = 0;
+  for (let i = 3; i < N; i++){
+    if (e[i] < maxE * 0.004) continue;
+    const ref = Math.max(e[i - 1], e[i - 2], e[i - 3]);
+    const v = Math.log10((e[i] + eps) / (ref + eps));
+    if (v > 0){ odf[i] = v; if (v > mx) mx = v; }
+  }
+  if (mx > 0) for (let i = 0; i < N; i++) odf[i] /= mx;
+  return { hop, odf, len: d0.length };
+}
+
+function updSlices(Ly){
+  if (!Ly.buf){ Ly.slices = []; return; }
+  const dur = Ly.buf.duration, s = Ly.region.s, e = Ly.region.e;
+  let pts = [s];
+  if (Ly.smp.by === 'trans' && Ly.odf){
+    const { hop, odf, len } = Ly.odf, thr = 0.92 - Ly.smp.sens / 100 * 0.86, gap = 12;
+    let last = -gap;
+    for (let i = 1; i < odf.length - 1 && pts.length < 64; i++){
+      if (odf[i] < thr || odf[i] < odf[i - 1] || odf[i] < odf[i + 1] || i - last < gap) continue;
+      const p = Math.max(0, (i - 1) * hop) / len;
+      if (p > s + 0.01 / dur && p < e - 0.02 / dur){ pts.push(p); last = i; }
+    }
+  } else if (Ly.smp.by === 'beat'){
+    const st = BEATDIV[Ly.smp.beat][1] * 60 / S.bpm / dur;
+    for (let p = s + st; p < e - 0.01 / dur && pts.length < 128; p += st) pts.push(p);
+  } else if (Ly.smp.by === 'region'){
+    const k = REGN[Ly.smp.reg];
+    for (let i = 1; i < k; i++) pts.push(s + (e - s) * i / k);
+  } else if (Ly.smp.by === 'manual'){
+    for (const p of Ly.smp.manual) if (p > s && p < e) pts.push(p);
+  }
+  pts.sort((a, b) => a - b);
+  Ly.slices = pts.filter((p, i) => i === 0 || (p - pts[i - 1]) * dur > 0.008);
+  Ly.sel = Math.min(Ly.sel, Ly.slices.length - 1);
+  if (Ly === L()) refreshSliceUI();
+}
+function sliceAt(Ly, p){ const sl = Ly.slices; let k = 0; for (let i = 0; i < sl.length; i++) if (sl[i] <= p) k = i; return k; }
+function toManual(Ly){ Ly.smp.manual = Ly.slices.slice(1); Ly.smp.by = 'manual'; }
+
+/* =========================================================
+   LFOs (sync al tempo o libres) y modulación
+   ========================================================= */
+function hash(n){ const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); }
+function lfoVal(f, t){
+  const ph = f.sync ? beatAt(t) / LDIV[f.div][1] : t * f.rate, fr = ph - Math.floor(ph);
+  switch (f.wave){
+    case 0: return Math.sin(2 * Math.PI * fr);
+    case 1: return 1 - 4 * Math.abs(fr - 0.5);
+    case 2: return fr < 0.5 ? 1 : -1;
+    case 3: return 2 * fr - 1;
+    default: return hash(Math.floor(ph) + f.seed) * 2 - 1;
+  }
+}
+function modAt(Ly, t){
+  const m = { size: 0, spray: 0, dens: 0, pos: 0, pitch: 0, cut: 0, amp: 0, atk: 0 };
+  for (const f of Ly.lfo){
+    if (f.depth <= 0) continue;
+    const v = lfoVal(f, t) * f.depth / 100;
+    for (const [k] of TG) if (f.tg[k]) m[k] += v;
+  }
+  if (M.active && M.layer === Ly.idx) m[MXT[S.mx.tgt][0]] += M.y * 2 - 1;
+  return m;
+}
+function ampFactor(Ly, t){
+  let a = 1;
+  for (const f of Ly.lfo) if (f.depth > 0 && f.tg.amp) a *= 1 - (f.depth / 100) * (1 - lfoVal(f, t)) / 2;
+  return a;
+}
+
+/* =========================================================
+   MOTOR GRANULAR
+   Un "emisor" dispara una nube de granos entre next y end
+   (pasos del secuenciador, teclas mantenidas o el matrix).
+   ========================================================= */
+function spawnGrain(em, t){
+  const Ly = LS[em.layer], c = A.ctx, buf = Ly.buf;
+  if (!buf || A.active >= MAXV) return;
+  const m = modAt(Ly, t);
+  const G = clamp(Ly.grain.size * Math.pow(2, m.size * 2), 3, 2000) / 1000;
+  const rate = clamp(Math.pow(2, (Ly.pitch + em.semis + m.pitch * 12) / 12), 0.0625, 16);
+  const dur = buf.duration;
+  const rs = Ly.region.s * dur, rl = Math.max(0.001, (Ly.region.e - Ly.region.s) * dur);
+  const spray = clamp(Ly.grain.spray / 100 + m.spray * 0.5, 0, 1);
+  const p = (em.mx ? M.x : em.key ? Ly.grain.pos / 100 : em.pos) + m.pos * 0.5;
+  let pos = rs + p * rl + (Math.random() * 2 - 1) * spray * rl;
+  pos = rs + (((pos - rs) % rl) + rl) % rl;
+  const len = G * rate;
+  if (pos + len > dur) pos = Math.max(0, dur - len);
+
+  let a = clamp(Ly.env.a + m.atk * 50, 0, 100) / 100, d = Ly.env.d / 100, r = Ly.env.r / 100;
+  const s = Ly.env.s / 100, sum = a + d + r;
+  if (sum > 1){ a /= sum; d /= sum; r /= sum; }
+  const dens = Ly.grain.dens * Math.pow(2, m.dens * 2);
+  const peak = 0.55 / Math.sqrt(Math.max(1, dens * G));
+  const tA = t + Math.max(0.001, a * G), tD = tA + d * G;
+  const tS = Math.max(tD, t + G - Math.max(0.002, r * G)), tE = Math.max(tS + 0.002, t + G);
+
+  const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, tA);
+  g.gain.linearRampToValueAtTime(peak * s, tD);
+  g.gain.setValueAtTime(peak * s, tS);
+  g.gain.linearRampToValueAtTime(0, tE);
+  src.connect(g);
+  let out = g;
+  if (A.hasPan && Ly.pan > 0){
+    const pn = c.createStereoPanner(); pn.pan.value = (Math.random() * 2 - 1) * Ly.pan / 100;
+    g.connect(pn); out = pn;
+  }
+  out.connect(Ly.nodes.in);
+  src.start(t, pos);
+  src.stop(tE + 0.01);
+  A.active++;
+  src.onended = () => { A.active--; try { src.disconnect(); g.disconnect(); if (out !== g) out.disconnect(); } catch (e) {} };
+  A.grainVis.push({ layer: Ly.idx, p: pos / dur, y: em.mx ? M.y : Math.random(), t, e: tE });
+}
+
+/* =========================================================
+   MOTOR SAMPLE (slices con ADSR en ms, trigger/gate, mono/poly)
+   ========================================================= */
+function envBase(v, x){
+  if (x <= v.t) return 0;
+  if (x < v.tA) return v.peak * (x - v.t) / (v.tA - v.t);
+  if (x < v.tD) return v.peak + (v.peak * v.sus - v.peak) * (x - v.tA) / (v.tD - v.tA);
+  return v.peak * v.sus;
+}
+function envAt(v, x){
+  if (x < v.relStart) return envBase(v, x);
+  if (x >= v.stopT) return 0;
+  return v.relV * (1 - (x - v.relStart) / (v.stopT - v.relStart));
+}
+// reprograma la fase de release a partir de "at" sin saltos de nivel
+function reEnv(v, at, stop){
+  const val = envAt(v, at), p = v.g.gain;
+  p.cancelScheduledValues(at); p.setValueAtTime(val, at); p.linearRampToValueAtTime(0, stop);
+  v.relStart = at; v.relV = val; v.stopT = stop;
+  try { v.src.stop(stop + 0.02); } catch (e) {}
+}
+
+function playSlice(Ly, idx, t, o = {}){
+  const c = A.ctx, buf = Ly.buf, sl = Ly.slices, n = sl.length;
+  if (!buf || !n || idx < 0 || idx >= n) return null;
+  if (!Ly.smp.poly) Ly.voices.forEach(v => v.choke(t));
+  else if (Ly.voices.length >= 24) Ly.voices[0].choke(t);
+  const m = modAt(Ly, t);
+  const rate = clamp(Math.pow(2, (Ly.pitch + (o.semis || 0) + m.pitch * 12) / 12), 0.0625, 16);
+  const sN = sl[idx], eN = idx + 1 < n ? sl[idx + 1] : Ly.region.e;
+  const len = Math.max(0.005, (eN - sN) * buf.duration), endT = t + len / rate;
+  const E = Ly.senv;
+  const a = Math.max(0.002, E.a / 1000 * Math.pow(2, m.atk * 3)), d = E.d / 1000, sus = E.s / 100, r = Math.max(0.004, E.r / 1000);
+  const v = { Ly, t, tA: t + a, tD: t + a + Math.max(0.001, d), peak: 0.75, sus, r, endT, startN: sN, rate, trig: Ly.smp.trig, relStart: 0, relV: 0, stopT: 0 };
+  if (v.trig){
+    v.stopT = endT;
+    v.relStart = Math.max(endT - r, t + Math.min(a, (endT - t) / 2));
+  } else {
+    const off = o.off == null ? Infinity : o.off;
+    if (off < endT){ v.relStart = Math.max(t + 0.001, off); v.stopT = Math.min(v.relStart + r, endT); }
+    else { v.stopT = endT; v.relStart = Math.max(t + 0.001, endT - 0.006); }
+  }
+  v.relV = envBase(v, v.relStart);
+
+  const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
+  const g = c.createGain(), p = g.gain;
+  p.setValueAtTime(0, t);
+  if (v.tA < v.relStart) p.linearRampToValueAtTime(v.peak, v.tA);
+  if (v.tD < v.relStart) p.linearRampToValueAtTime(v.peak * sus, v.tD);
+  p.linearRampToValueAtTime(v.relV, v.relStart);
+  p.linearRampToValueAtTime(0, v.stopT);
+  src.connect(g);
+  let out = g;
+  if (A.hasPan && Ly.pan > 0){
+    const pn = c.createStereoPanner(); pn.pan.value = (Math.random() * 2 - 1) * Ly.pan / 100;
+    g.connect(pn); out = pn;
+  }
+  out.connect(Ly.nodes.in);
+  src.start(t, sN * buf.duration);
+  src.stop(v.stopT + 0.02);
+  v.src = src; v.g = g;
+  v.release = now => { if (v.trig) return; const at = Math.max(now, v.t + 0.002); if (at >= v.relStart) return; reEnv(v, at, Math.min(at + v.r, v.endT)); };
+  v.choke = at => { at = Math.max(at, c.currentTime); if (at >= v.stopT) return; reEnv(v, at, at + 0.008); };
+  Ly.voices.push(v);
+  src.onended = () => { const i = Ly.voices.indexOf(v); if (i >= 0) Ly.voices.splice(i, 1); try { src.disconnect(); g.disconnect(); if (out !== g) out.disconnect(); } catch (e) {} };
+  return v;
+}
+
+/* =========================================================
+   SECUENCIADOR · SCHEDULER (lookahead, un patrón por capa)
+   Cada capa tiene su longitud (LEN), así que pueden ir en polimetría.
+   ========================================================= */
+function tick(){
+  const c = A.ctx; if (!c) return;
+  const now = c.currentTime, horizon = now + LOOK;
+  if (S.playing){
+    if (A.nextStep < now - 0.2) A.nextStep = now + 0.03;
+    while (A.nextStep < horizon){
+      const t = A.nextStep, sd = stepDur();
+      for (const Ly of LS){
+        const i = A.gStep % Ly.len, st = Ly.steps[i];
+        A.uiQ.push({ layer: Ly.idx, i, t });
+        if (!st.on || !Ly.buf) continue;
+        if (Ly.mode === 'grain') A.emitters.push({ layer: Ly.idx, next: t, end: t + Ly.gate * sd, pos: st.pos, semis: 0 });
+        else { const n = Ly.slices.length; if (n) playSlice(Ly, Math.min(n - 1, Math.floor(st.pos * n)), t, { off: t + Ly.gate * sd }); }
+      }
+      A.nextStep += sd; A.gStep++;
+    }
+  }
+  for (const em of A.emitters){
+    if (em.next < now - 0.05) em.next = now;
+    const Ly = LS[em.layer];
+    while (em.next < horizon && em.next < em.end){
+      spawnGrain(em, em.next);
+      const dens = clamp(Ly.grain.dens * Math.pow(2, modAt(Ly, em.next).dens * 2), 0.5, 400);
+      em.next += (1 / dens) * (0.85 + Math.random() * 0.3);
+    }
+  }
+  A.emitters = A.emitters.filter(em => em.next < em.end);
+  // LPF y volumen de cada capa modulados (LFO / matrix): puntos cada 10 ms
+  if (A.modT < now) A.modT = now;
+  while (A.modT < now + LOOKM){
+    A.modT += 0.01;
+    const t = A.modT;
+    for (const Ly of LS){
+      const m = modAt(Ly, t);
+      Ly.nodes.lp.frequency.linearRampToValueAtTime(clamp(Ly.lpf.f * Math.pow(2, m.cut * 4), 30, 20000), t);
+      Ly.nodes.amp.gain.linearRampToValueAtTime(layerGain(Ly) * ampFactor(Ly, t), t);
+    }
+  }
+}
+
+function togglePlay(){
+  if (!A.ctx) return;
+  S.playing = !S.playing;
+  if (S.playing){
+    A.gStep = 0; A.nextStep = A.ctx.currentTime + 0.05;
+    A.clock = { b0: 0, t0: A.nextStep };         // los LFO sincronizados arrancan con el compás
+    tick();
+  } else { A.uiQ = []; A.cur = [-1, -1]; paintPlayhead(); }
+  $('#play').classList.toggle('on', S.playing);
+  $('#play').textContent = S.playing ? 'STOP' : 'PLAY';
+}
+
+function setBpm(v){
+  const nb = clamp(Math.round(v), 40, 240);
+  if (nb === S.bpm) return;
+  if (A.ctx){ const now = A.ctx.currentTime; A.clock = { b0: beatAt(now), t0: now }; }
+  S.bpm = nb;
+  $('#bpmN').textContent = S.bpm;
+  applyDelay();
+  LS.forEach(Ly => { if (Ly.smp.by === 'beat') updSlices(Ly); });
+  refreshUI();
+}
+
+/* =========================================================
+   GRABACIÓN Y EXPORTACIÓN DE LA SALIDA (WAV)
+   ========================================================= */
+function encodeWAV(Lc, Rc, sr){
+  const n = Lc.length, buf = new ArrayBuffer(44 + n * 4), v = new DataView(buf);
+  let o = 0;
+  const ws = s => { for (let i = 0; i < s.length; i++) v.setUint8(o++, s.charCodeAt(i)); };
+  const u32 = x => { v.setUint32(o, x, true); o += 4; }, u16 = x => { v.setUint16(o, x, true); o += 2; };
+  ws('RIFF'); u32(36 + n * 4); ws('WAVE'); ws('fmt '); u32(16); u16(1); u16(2); u32(sr); u32(sr * 4); u16(4); u16(16);
+  ws('data'); u32(n * 4);
+  for (let i = 0; i < n; i++){
+    const l = clamp(Lc[i], -1, 1), r = clamp(Rc[i], -1, 1);
+    v.setInt16(o, l < 0 ? l * 0x8000 : l * 0x7FFF, true); o += 2;
+    v.setInt16(o, r < 0 ? r * 0x8000 : r * 0x7FFF, true); o += 2;
+  }
+  return new Blob([buf], { type: 'audio/wav' });
+}
+function recOutToggle(){
+  if (!A.ctx) return;
+  const st = A.outRec && A.outRec.state;
+  if (st === 'tail') return;
+  if (st === 'rec'){
+    A.outRec.state = 'tail';
+    A.outRec.tailEnd = A.ctx.currentTime + S.tail;
+    setTimeout(finishOut, S.tail * 1000 + 30);
+    return;
+  }
+  A.recOut.start();
+  A.outRec = { state: 'rec', t0: A.ctx.currentTime };
+  $('#recOut').classList.add('on');
+  status('GRABANDO SALIDA');
+}
+async function finishOut(){
+  const { L: Lc, R: Rc } = await A.recOut.stop();
+  A.outRec = null;
+  const b = $('#recOut'); b.classList.remove('on'); b.textContent = 'REC';
+  if (!Lc.length){ status('NADA GRABADO', true, 3000); return; }
+  const d = new Date(), p = x => String(x).padStart(2, '0');
+  const name = `acid-plastic-grains-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.wav`;
+  A.lastWav = { blob: encodeWAV(Lc, Rc, A.ctx.sampleRate), name };
+  $('#save').disabled = false; $('#share').disabled = false;
+  $('#outTxt').textContent = (Lc.length / A.ctx.sampleRate).toFixed(1) + 's';
+  status('WAV ' + (Lc.length / A.ctx.sampleRate).toFixed(1) + 's LISTO · FX › SAVE', false, 6000);
+}
+function saveWav(){
+  if (!A.lastWav) return;
+  const url = URL.createObjectURL(A.lastWav.blob);
+  const a = document.createElement('a'); a.href = url; a.download = A.lastWav.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+async function shareWav(){
+  if (!A.lastWav) return;
+  const f = new File([A.lastWav.blob], A.lastWav.name, { type: 'audio/wav' });
+  if (navigator.canShare && navigator.canShare({ files: [f] })){
+    try { await navigator.share({ files: [f], title: 'Acid Plastic Grains' }); } catch (e) {}
+  } else saveWav();
+}
+
+/* =========================================================
+   UI · COMPONENTES (faders y segmentados ligados a la capa activa)
+   ========================================================= */
+const SYNCS = [];
+const FADS = {};
+function fader(parent, o){
+  const el = h('div', 'fader');
+  const tr = h('div', 'ft'), cap = h('div', 'fc'), val = h('div', 'fv');
+  tr.append(h('div', 'fs'), cap);
+  el.append(h('div', 'fl', o.label), tr, val);
+  parent.appendChild(el);
+  const curve = o.curve || 'lin';
+  const toN = v => curve === 'exp' ? Math.log(v / o.min) / Math.log(o.max / o.min)
+                 : curve === 'sq' ? Math.sqrt((v - o.min) / (o.max - o.min)) : (v - o.min) / (o.max - o.min);
+  const fromN = n => {
+    let v = curve === 'exp' ? o.min * Math.pow(o.max / o.min, n) : curve === 'sq' ? o.min + n * n * (o.max - o.min) : o.min + n * (o.max - o.min);
+    if (o.step) v = Math.round(v / o.step) * o.step;
+    return clamp(v, o.min, o.max);
+  };
+  const fmt = o.fmt || (v => String(v));
+  const def = o.def != null ? o.def : o.get();
+  const isDis = () => !!(o.dis && o.dis());
+  const f = {
+    el,
+    sync(){
+      const v = o.get(), d = isDis();
+      el.classList.toggle('dis', d);
+      cap.style.bottom = `calc(${clamp(toN(v), 0, 1)} * (100% - 12px))`;
+      val.textContent = d && o.alt ? o.alt() : fmt(v);
+    },
+    setVal(v){ v = clamp(v, o.min, o.max); o.set(v); f.sync(); if (o.after) o.after(v); }
+  };
+  let drag = false, sy = 0, sn = 0, last = 0;
+  tr.addEventListener('pointerdown', e => {
+    if (isDis()) return;
+    e.preventDefault(); tr.setPointerCapture(e.pointerId);
+    const t = performance.now();
+    if (t - last < 280){ f.setVal(def); last = 0; drag = false; return; }   // doble toque = valor por defecto
+    last = t; drag = true; sy = e.clientY; sn = clamp(toN(o.get()), 0, 1);
+  });
+  tr.addEventListener('pointermove', e => { if (drag) f.setVal(fromN(clamp(sn + (sy - e.clientY) / (tr.clientHeight - 12), 0, 1))); });
+  const end = () => { drag = false; };
+  tr.addEventListener('pointerup', end); tr.addEventListener('pointercancel', end);
+  SYNCS.push(f.sync);
+  if (o.id) FADS[o.id] = f;
+  f.sync();
+  return f;
+}
+function seg(parent, labels, o){
+  const w = h('div', o.cls || 'seg');
+  const bs = labels.map((l, i) => {
+    const b = btn(l, 'btn sm');
+    b.addEventListener('click', () => { o.set(i); refreshUI(); });
+    w.appendChild(b); return b;
+  });
+  const sync = () => { const c = o.get(); bs.forEach((b, j) => { b.classList.toggle('on', j === c); if (o.dim) b.classList.toggle('dim', o.dim(j)); }); };
+  SYNCS.push(sync); sync();
+  parent.appendChild(w);
+  return w;
+}
+function sub(parent, txt){ parent.appendChild(h('div', 'sub', txt)); }
+
+/* =========================================================
+   UI · CONSTRUCCIÓN
+   ========================================================= */
+function buildUI(){
+  // ---- ENGINE: GRAIN / SAMPLE ----
+  seg($('#modeSeg'), ['GRAIN', 'SAMPLE'], { cls: 'seg', get: () => L().mode === 'grain' ? 0 : 1, set: i => { mxStop(); L().mode = i ? 'sample' : 'grain'; } });
+
+  // ---- GRAIN ----
+  const g = $('#fGrain');
+  fader(g, { label:'SIZE',  min:5, max:1000, curve:'exp', fmt:fmtMs,  get:() => L().grain.size,  set:v => L().grain.size = v });
+  fader(g, { label:'SPRAY', min:0, max:100,  fmt:fmtPct, get:() => L().grain.spray, set:v => L().grain.spray = v });
+  fader(g, { label:'DENS',  min:1, max:100,  curve:'exp', fmt:v => (v < 10 ? v.toFixed(1) : Math.round(v)) + '/s', get:() => L().grain.dens, set:v => L().grain.dens = v });
+  fader(g, { id:'pos', label:'POS', min:0, max:100, fmt:fmtPct, get:() => L().grain.pos, set:v => L().grain.pos = v });
+
+  // ---- SLICE ----
+  const sb = $('#slBox');
+  sub(sb, 'SLICE BY'); sb.firstChild.style.marginTop = '0';
+  seg(sb, ['TRANS', 'BEAT', 'REGION', 'MANUAL'], { cls: 'seg4', get: () => BY.indexOf(L().smp.by), set: i => {
+    const Ly = L();
+    // al pasar a MANUAL sin marcadores, se parte de los slices actuales
+    if (BY[i] === 'manual' && Ly.smp.by !== 'manual' && !Ly.smp.manual.length) Ly.smp.manual = Ly.slices.slice(1);
+    Ly.smp.by = BY[i]; updSlices(Ly);
+  } });
+  const sT = h('div', 'sl sl-trans'); sb.appendChild(sT);
+  const sTf = h('div', 'faders'); sT.appendChild(sTf);
+  fader(sTf, { label:'SENS', min:0, max:100, fmt:fmtPct, get:() => L().smp.sens, set:v => L().smp.sens = v, after:() => updSlices(L()) });
+  const sB = h('div', 'sl sl-beat'); sb.appendChild(sB); sub(sB, 'DIVISION');
+  seg(sB, BEATDIV.map(d => d[0]), { cls: 'seg6', get: () => L().smp.beat, set: i => { L().smp.beat = i; updSlices(L()); } });
+  const sR = h('div', 'sl sl-region'); sb.appendChild(sR); sub(sR, 'REGIONES');
+  seg(sR, REGN.map(String), { cls: 'seg6', get: () => L().smp.reg, set: i => { L().smp.reg = i; updSlices(L()); } });
+  const sM = h('div', 'sl sl-manual'); sb.appendChild(sM); sub(sM, 'MARCADORES');
+  const clrM = btn('CLEAR', 'btn sm'); clrM.addEventListener('click', () => { L().smp.manual = []; updSlices(L()); }); sM.appendChild(clrM);
+  const pr = h('div', 'pair'); sb.appendChild(pr);
+  const p1 = h('div'), p2 = h('div'); pr.append(p1, p2);
+  sub(p1, 'PLAY'); seg(p1, ['TRIG', 'GATE'], { cls: 'seg4', get: () => L().smp.trig ? 0 : 1, set: i => L().smp.trig = i === 0 });
+  sub(p2, 'VOICE'); seg(p2, ['MONO', 'POLY'], { cls: 'seg4', get: () => L().smp.poly ? 1 : 0, set: i => L().smp.poly = i === 1 });
+  p1.lastChild.style.gridTemplateColumns = p2.lastChild.style.gridTemplateColumns = 'repeat(2,1fr)';
+
+  // ---- comunes ----
+  const cm = $('#fCommon');
+  fader(cm, { label:'PITCH',  min:-24, max:24, step:1, fmt:v => (v > 0 ? '+' : '') + v + 'st', get:() => L().pitch, set:v => L().pitch = v });
+  fader(cm, { label:'SPREAD', min:0, max:100, fmt:fmtPct, get:() => L().pan, set:v => L().pan = v });
+  fader(cm, { label:'GATE',   min:0.1, max:4, step:0.05, fmt:v => '×' + v.toFixed(2), get:() => L().gate, set:v => L().gate = v });
+  fader(cm, { label:'VOL',    min:0, max:100, fmt:fmtPct, get:() => L().vol, set:v => L().vol = v });
+
+  // ---- ENVELOPE ----
+  const eg = $('#fEnvG');
+  for (const k of ['a', 'd', 's', 'r'])
+    fader(eg, { label:k.toUpperCase(), min:0, max:100, fmt:fmtPct, get:() => L().env[k], set:v => L().env[k] = v, after:drawEnv });
+  const es = $('#fEnvS');
+  fader(es, { label:'A', min:0, max:2000, curve:'sq', fmt:fmtMs,  get:() => L().senv.a, set:v => L().senv.a = v, after:drawEnv });
+  fader(es, { label:'D', min:0, max:4000, curve:'sq', fmt:fmtMs,  get:() => L().senv.d, set:v => L().senv.d = v, after:drawEnv });
+  fader(es, { label:'S', min:0, max:100,  fmt:fmtPct, get:() => L().senv.s, set:v => L().senv.s = v, after:drawEnv });
+  fader(es, { label:'R', min:0, max:4000, curve:'sq', fmt:fmtMs,  get:() => L().senv.r, set:v => L().senv.r = v, after:drawEnv });
+
+  // ---- FILTER ----
+  const fl = $('#fFilt');
+  fader(fl, { label:'HPF',     min:20, max:8000,  curve:'exp', fmt:fmtHz, get:() => L().hpf.f, set:v => { L().hpf.f = v; applyFilters(L()); } });
+  fader(fl, { label:'HPF RES', min:0,  max:20,    step:0.5, fmt:v => v.toFixed(1) + 'dB', get:() => L().hpf.q, set:v => { L().hpf.q = v; applyFilters(L()); } });
+  fader(fl, { label:'LPF',     min:60, max:20000, curve:'exp', fmt:fmtHz, get:() => L().lpf.f, set:v => L().lpf.f = v });
+  fader(fl, { label:'LPF RES', min:0,  max:20,    step:0.5, fmt:v => v.toFixed(1) + 'dB', get:() => L().lpf.q, set:v => { L().lpf.q = v; applyFilters(L()); } });
+
+  // ---- LFOs ----
+  const lf = $('#lfos');
+  [0, 1].forEach(i => {
+    const F = () => L().lfo[i];
+    const box = h('div', 'lfo');
+    const head = h('div', 'lfohead'); head.append(h('span', 'lbl', 'LFO ' + (i + 1)));
+    const ind = h('div', 'lfoind'); const dot = h('div'); ind.appendChild(dot); head.appendChild(ind);
+    box.appendChild(head);
+    seg(box, ['FREE', 'SYNC'], { cls: 'seg', get: () => F().sync ? 1 : 0, set: k => F().sync = k === 1 });
+    const dv = h('div', 'divs'); box.appendChild(dv); sub(dv, 'DIVISION');
+    seg(dv, LDIV.map(d => d[0]), { cls: 'seg6', get: () => F().div, set: k => F().div = k });
+    sub(box, 'WAVE');
+    seg(box, WAVES, { cls: 'seg5', get: () => F().wave, set: k => F().wave = k });
+    sub(box, 'DESTINO');
+    const tg = h('div', 'seg4');
+    for (const [k, lab] of TG){
+      const b = btn(lab, 'btn sm');
+      b.addEventListener('click', () => { F().tg[k] = !F().tg[k]; refreshUI(); });
+      SYNCS.push(() => { b.classList.toggle('on', F().tg[k]); b.classList.toggle('dim', L().mode === 'sample' && GRAIN_ONLY.has(k)); });
+      tg.appendChild(b);
+    }
+    box.appendChild(tg);
+    const fd = h('div', 'faders');
+    fader(fd, { label:'RATE',  min:0.05, max:20, curve:'exp', fmt:v => (v < 1 ? v.toFixed(2) : v.toFixed(1)) + 'Hz',
+      get:() => F().rate, set:v => F().rate = v, dis:() => F().sync, alt:() => LDIV[F().div][0] });
+    fader(fd, { label:'DEPTH', min:0, max:100, fmt:fmtPct, get:() => F().depth, set:v => F().depth = v });
+    box.appendChild(fd);
+    SYNCS.push(() => box.classList.toggle('sync', F().sync));
+    lfoDots.push({ dot, F });
+    lf.appendChild(box);
+  });
+
+  // ---- DELAY ----
+  seg($('#dMode'), ['SYNC', 'FREE'], { cls: 'seg', get: () => S.dly.sync ? 0 : 1, set: i => { S.dly.sync = i === 0; applyDelay(); } });
+  seg($('#dDiv'), DIVS.map(d => d[0]), { cls: 'seg4', get: () => S.dly.div, set: i => { S.dly.div = i; S.dly.sync = true; applyDelay(); } });
+  const dl = $('#fDly');
+  fader(dl, { label:'TIME', min:1, max:2000, curve:'exp', fmt:fmtMs, get:() => S.dly.time, set:v => { S.dly.time = v; applyDelay(); },
+    dis:() => S.dly.sync, alt:() => fmtMs(delayTimeSec() * 1000) });
+  fader(dl, { label:'FDBK', min:0, max:95, fmt:fmtPct, get:() => S.dly.fb, set:v => { S.dly.fb = v; applyDelay(); } });
+  fader(dl, { label:'TONE', min:500, max:20000, curve:'exp', fmt:fmtHz, get:() => S.dly.tone, set:v => { S.dly.tone = v; applyDelay(); } });
+  fader(dl, { label:'MIX',  min:0, max:100, fmt:fmtPct, get:() => S.dly.mix, set:v => { S.dly.mix = v; applyDelay(); } });
+
+  // ---- REVERB ----
+  const rv = $('#fRev');
+  fader(rv, { label:'DECAY', min:0.3, max:8, curve:'exp', fmt:v => v.toFixed(2) + 's', get:() => S.rev.decay, set:v => { S.rev.decay = v; applyRev(); } });
+  fader(rv, { label:'PRE',   min:0, max:100, fmt:v => Math.round(v) + 'ms', get:() => S.rev.pre, set:v => { S.rev.pre = v; applyRev(); } });
+  fader(rv, { label:'DAMP',  min:0, max:100, fmt:fmtPct, get:() => S.rev.damp, set:v => { S.rev.damp = v; applyRev(); } });
+  fader(rv, { label:'MIX',   min:0, max:100, fmt:fmtPct, get:() => S.rev.mix, set:v => { S.rev.mix = v; applyRev(); } });
+  $('#eco').addEventListener('click', () => {
+    if (!A.ctx) return;
+    if (!A.plate){ status('PLATE NO DISPONIBLE · SOLO ECO', true, 3000); return; }
+    S.rev.eco = !S.rev.eco; setRevMode();
+  });
+
+  // ---- OUTPUT ----
+  const TAILS = [0, 2, 4, 8];
+  seg($('#tailSeg'), TAILS.map(t => t + 'S'), { cls: 'seg4', get: () => TAILS.indexOf(S.tail), set: i => S.tail = TAILS[i] });
+  fader($('#fOut'), { label:'MASTER', min:0, max:100, fmt:fmtPct, get:() => S.master, set:v => { S.master = v; applyMaster(); } });
+
+  // ---- MATRIX / KEYS ----
+  seg($('#mxSeg'), MXT.map(m => m[1]), { cls: 'seg5', get: () => S.mx.tgt, set: i => S.mx.tgt = i,
+    dim: j => L().mode === 'sample' && GRAIN_ONLY.has(MXT[j][0]) });
+  seg($('#kbModeSeg'), ['SLICE', 'PITCH'], { cls: 'seg', get: () => S.kbMode, set: i => S.kbMode = i });
+
+  buildSeq();
+  buildKeys();
+}
+const lfoDots = [];
+
+/* =========================================================
+   UI · REFRESCO (al cambiar de capa, modo o parámetros)
+   ========================================================= */
+function refreshUI(){
+  const Ly = L();
+  document.body.dataset.mode = Ly.mode;
+  document.body.dataset.slice = Ly.smp.by;
+  for (const f of SYNCS) f();
+  $('#layA').classList.toggle('on', CUR === 0); $('#layB').classList.toggle('on', CUR === 1);
+  $('#layA').classList.toggle('mut', LS[0].mute); $('#layB').classList.toggle('mut', LS[1].mute);
+  $('#layName').textContent = Ly.name; $('#seqLay').textContent = Ly.name;
+  $('#sName').textContent = Ly.buf ? Ly.sname + ' · ' + Ly.buf.duration.toFixed(2) + 's' : 'SIN MUESTRA';
+  $('#s2t').textContent = Ly.mode === 'grain' ? 'GRAIN' : 'SLICE';
+  $('#envTxt').textContent = Ly.mode === 'grain' ? 'por grano' : 'por slice';
+  $('#muteBtn').classList.toggle('on', Ly.mute);
+  $('#muteBtn').textContent = 'MUTE ' + Ly.name;
+  $('#lenV').textContent = Ly.len;
+  $('#mxTxt').textContent = Ly.mode === 'grain' ? 'X = POSICIÓN' : 'X = SLICE';
+  $('#kbTxt').textContent = Ly.mode === 'grain' ? 'CAPA ' + Ly.name + ' · GRAIN' : 'CAPA ' + Ly.name + (S.kbMode ? ' · PITCH SLICE ' + (Ly.sel + 1) : ' · SLICES');
+  $('#octV').textContent = (S.kbOct > 0 ? '+' : '') + S.kbOct;
+  refreshSliceUI();
+  drawEnv();
+}
+function refreshSliceUI(){
+  const Ly = L();
+  $('#sliceInfo').textContent = Ly.mode === 'sample' ? Ly.slices.length + ' SLICES' : '';
+  updRegionTxt();
+  updAllSteps();
+  updKeyLabels();
+}
+
+/* =========================================================
+   UI · SECUENCIADOR
+   ========================================================= */
+const stepEls = [], cellEls = [], phEls = [];
+function updStep(i){
+  const Ly = L(), st = Ly.steps[i], out = i >= Ly.len;
+  stepEls[i].classList.toggle('on', st.on);
+  stepEls[i].classList.toggle('out', out);
+  cellEls[i].classList.toggle('off', !st.on);
+  cellEls[i].classList.toggle('out', out);
+  cellEls[i].firstChild.style.height = (st.pos * 100).toFixed(1) + '%';
+  const n = Ly.slices.length;
+  cellEls[i].lastChild.textContent = Ly.mode === 'sample' && n ? String(Math.min(n - 1, Math.floor(st.pos * n)) + 1) : '';
+}
+function updAllSteps(){ for (let i = 0; i < 16; i++) updStep(i); $('#laneLbl').textContent = L().mode === 'grain' ? 'POS' : 'SLICE'; }
+function seqInfo(i){
+  const Ly = L(), st = Ly.steps[i], n = Ly.slices.length;
+  $('#seqTxt').textContent = 'STEP ' + String(i + 1).padStart(2, '0') + (Ly.mode === 'grain' ? ' · POS ' + st.pos.toFixed(2) : ' · SLICE ' + (Math.min(n - 1, Math.floor(st.pos * n)) + 1));
+}
+function buildSeq(){
+  const se = $('#steps'), la = $('#lane'), ph = $('#phs');
+  for (let i = 0; i < 16; i++){
+    const b = btn(String(i + 1), 'btn step'); se.appendChild(b); stepEls.push(b);
+    let timer = null, long = false;
+    b.addEventListener('pointerdown', () => {
+      long = false;
+      timer = setTimeout(() => { long = true; L().steps[i].pos = Math.random(); updStep(i); seqInfo(i); b.classList.add('flash'); setTimeout(() => b.classList.remove('flash'), 160); }, 450);
+    });
+    const cancel = () => clearTimeout(timer);
+    b.addEventListener('pointerup', cancel); b.addEventListener('pointercancel', cancel); b.addEventListener('pointerleave', cancel);
+    b.addEventListener('click', () => { if (long){ long = false; return; } L().steps[i].on = !L().steps[i].on; updStep(i); });
+    b.addEventListener('contextmenu', e => e.preventDefault());
+    const c = h('div', 'cell'); c.append(h('div', 'bar'), h('div', 'sn')); la.appendChild(c); cellEls.push(c);
+    const p = h('div'); ph.appendChild(p); phEls.push(p);
+  }
+  let drawing = false;
+  const laneSet = e => {
+    const r = la.getBoundingClientRect();
+    const i = clamp(Math.floor((e.clientX - r.left) / r.width * 16), 0, 15);
+    L().steps[i].pos = clamp(1 - (e.clientY - r.top) / r.height, 0, 0.999);
+    updStep(i); seqInfo(i);
+  };
+  la.addEventListener('pointerdown', e => { e.preventDefault(); la.setPointerCapture(e.pointerId); drawing = true; laneSet(e); });
+  la.addEventListener('pointermove', e => { if (drawing) laneSet(e); });
+  la.addEventListener('pointerup', () => drawing = false);
+  la.addEventListener('pointercancel', () => drawing = false);
+
+  $('#rnd').addEventListener('click', () => { L().steps.forEach(s => { if (s.on) s.pos = Math.random(); }); updAllSteps(); });
+  $('#clr').addEventListener('click', () => { L().steps.forEach(s => s.on = false); updAllSteps(); });
+  $('#muteBtn').addEventListener('click', () => { L().mute = !L().mute; applyMute(L()); refreshUI(); });
+  const setLen = d => { L().len = clamp(L().len + d, 1, 16); refreshUI(); };
+  $('#lenDn').addEventListener('click', () => setLen(-1));
+  $('#lenUp').addEventListener('click', () => setLen(1));
+}
+function paintPlayhead(){ const c = A.cur[CUR]; phEls.forEach((p, j) => p.classList.toggle('on', j === c)); }
+
+/* =========================================================
+   UI · TECLADO
+   grain: toca la posición POS · sample: SLICE (cada tecla un slice)
+   o PITCH (el slice seleccionado, transportado)
+   ========================================================= */
+const held = new Map();
+const WHITES = [0, 2, 4, 5, 7, 9, 11, 12], BLACKS = [[1, 0], [3, 1], [6, 3], [8, 4], [10, 5]];
+const NOTE = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'];
+function keyDown(semi, el, id){
+  if (!A.ctx || !el) return;
+  if (A.ctx.state !== 'running') A.ctx.resume();
+  const Ly = L(); if (!Ly.buf) return;
+  el.classList.add('on');
+  const now = A.ctx.currentTime, t = now + 0.005;
+  let hd;
+  if (Ly.mode === 'grain'){
+    const em = { layer: Ly.idx, next: t, end: Infinity, key: true, semis: semi + S.kbOct * 12 };
+    A.emitters.push(em); hd = { em, el };
+    tick();
+  } else if (S.kbMode === 0){
+    const idx = semi + S.kbOct * 12;
+    const v = playSlice(Ly, idx, t, { off: Infinity });
+    if (v){ Ly.sel = idx; }
+    hd = { v, el };
+  } else {
+    hd = { v: playSlice(Ly, Ly.sel, t, { semis: semi + S.kbOct * 12, off: Infinity }), el };
+  }
+  held.set(id, hd);
+}
+function keyUp(id){
+  const hd = held.get(id); if (!hd) return;
+  held.delete(id);
+  const now = A.ctx.currentTime;
+  if (hd.em) hd.em.end = now;
+  if (hd.v) hd.v.release(now);
+  if (![...held.values()].some(v => v.el === hd.el)) hd.el.classList.remove('on');
+}
+function updKeyLabels(){
+  const Ly = L(), sliceMode = Ly.mode === 'sample' && S.kbMode === 0, n = Ly.slices.length;
+  document.querySelectorAll('#piano .wk').forEach((k, i) => {
+    const idx = WHITES[i] + S.kbOct * 12;
+    k.textContent = sliceMode ? (idx >= 0 && idx < n ? String(idx + 1) : '·') : NOTE[i];
+  });
+  document.querySelectorAll('#piano .bk').forEach((k, i) => {
+    const idx = BLACKS[i][0] + S.kbOct * 12;
+    k.textContent = sliceMode ? (idx >= 0 && idx < n ? String(idx + 1) : '·') : '';
+  });
+}
+function buildKeys(){
+  const pn = $('#piano');
+  const bind = (el, semi) => {
+    el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); keyDown(semi, el, 'p' + e.pointerId); });
+    const up = e => keyUp('p' + e.pointerId);
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
+  };
+  WHITES.forEach((s, i) => { const k = h('div', 'wk', NOTE[i]); bind(k, s); pn.appendChild(k); });
+  BLACKS.forEach(([s, wi]) => {
+    const k = h('div', 'bk');
+    k.style.left = `calc(${(wi + 1) * 12.5}% - ${12.5 * 0.31}%)`; k.style.width = `${12.5 * 0.62}%`;
+    bind(k, s); pn.appendChild(k);
+  });
+  const setOct = d => { S.kbOct = clamp(S.kbOct + d, -3, 5); refreshUI(); };
+  $('#octDn').addEventListener('click', () => setOct(-1));
+  $('#octUp').addEventListener('click', () => setOct(1));
+  // teclado del ordenador (para probar en escritorio)
+  const map = { a:0, w:1, s:2, e:3, d:4, f:5, t:6, g:7, y:8, h:9, u:10, j:11, k:12 };
+  const keyEl = semi => { const wi = WHITES.indexOf(semi); if (wi >= 0) return pn.querySelectorAll('.wk')[wi]; const bi = BLACKS.findIndex(b => b[0] === semi); return pn.querySelectorAll('.bk')[bi]; };
+  window.addEventListener('keydown', e => { const s = map[e.key]; if (s == null || e.repeat || e.metaKey || e.ctrlKey) return; keyDown(s, keyEl(s), 'k' + e.key); });
+  window.addEventListener('keyup', e => keyUp('k' + e.key));
+}
+
+/* =========================================================
+   MATRIX XY
+   X recorre la región de la muestra (posición en GRAIN, slice en SAMPLE)
+   Y modula el destino elegido (centro = sin cambio)
+   ========================================================= */
+const mxc = $('#mx');
+function mxSet(e){
+  const r = mxc.getBoundingClientRect();
+  M.x = clamp((e.clientX - r.left) / r.width, 0, 0.999);
+  M.y = clamp(1 - (e.clientY - r.top) / r.height, 0, 1);
+}
+function mxStart(){
+  const Ly = L(), now = A.ctx.currentTime;
+  if (M.active && M.layer !== CUR) mxStop();
+  M.active = true; M.layer = CUR;
+  if (Ly.mode === 'grain'){
+    if (!M.em){ M.em = { layer: CUR, mx: true, next: now + 0.005, end: Infinity, semis: 0 }; A.emitters.push(M.em); tick(); }
+    Ly.grain.pos = M.x * 100; if (FADS.pos) FADS.pos.sync();
+  } else mxSlice(true);
+}
+function mxSlice(force){
+  const Ly = LS[M.layer], now = A.ctx.currentTime;
+  if (!Ly.slices.length) return;
+  const idx = sliceAt(Ly, Ly.region.s + M.x * (Ly.region.e - Ly.region.s));
+  if (!force && idx === M.slice) return;
+  if (M.v) M.v.release(now);
+  M.v = playSlice(Ly, idx, now + 0.005, { off: Infinity });
+  M.slice = idx; Ly.sel = idx;
+}
+function mxMove(){
+  const Ly = LS[M.layer];
+  if (Ly.mode === 'grain'){ Ly.grain.pos = M.x * 100; if (FADS.pos && Ly === L()) FADS.pos.sync(); return; }
+  mxSlice(false);
+  if (M.v && MXT[S.mx.tgt][0] === 'pitch'){
+    const now = A.ctx.currentTime, m = modAt(Ly, now);
+    const rate = clamp(Math.pow(2, (Ly.pitch + m.pitch * 12) / 12), 0.0625, 16);
+    M.v.src.playbackRate.setTargetAtTime(rate, now, 0.015); M.v.rate = rate;
+  }
+}
+function mxStop(){
+  if (!A.ctx) return;
+  const now = A.ctx.currentTime;
+  if (M.em){ M.em.end = now; M.em = null; }
+  if (M.v){ M.v.release(now); M.v = null; }
+  M.active = false; M.slice = -1;
+}
+mxc.addEventListener('pointerdown', e => {
+  if (!A.ctx || !L().buf) return;
+  e.preventDefault(); mxc.setPointerCapture(e.pointerId);
+  if (A.ctx.state !== 'running') A.ctx.resume();
+  M.down = true; mxSet(e); mxStart();
+});
+mxc.addEventListener('pointermove', e => { if (!M.down) return; mxSet(e); mxMove(); });
+const mxUp = () => { if (!M.down) return; M.down = false; if (!S.mx.hold) mxStop(); };
+mxc.addEventListener('pointerup', mxUp); mxc.addEventListener('pointercancel', mxUp);
+$('#mxHold').addEventListener('click', () => {
+  S.mx.hold = !S.mx.hold; $('#mxHold').classList.toggle('on', S.mx.hold);
+  if (!S.mx.hold && !M.down) mxStop();
+});
+
+function drawMx(now){
+  const c = mxc, g = c.getContext('2d'), W = c.width, H = c.height, d = DPR();
+  if (W < 2) return;
+  const Ly = L();
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+  if (Ly.wcache){
+    const cw = Ly.wcache.width, ch = Ly.wcache.height, s = Ly.region.s, e = Ly.region.e;
+    g.globalAlpha = 0.14;
+    g.drawImage(Ly.wcache, s * cw, 0, Math.max(1, (e - s) * cw), ch, 0, H * 0.15, W, H * 0.7);
+    g.globalAlpha = 1;
+  }
+  g.fillStyle = '#000';
+  // retícula punteada
+  for (let k = 1; k < 4; k++){
+    for (let y = 0; y < H; y += 6 * d) g.fillRect(Math.round(W * k / 4), y, d, d);
+    for (let x = 0; x < W; x += 6 * d) g.fillRect(x, Math.round(H * k / 4), d, d);
+  }
+  const rs = Ly.region.s, rl = Math.max(1e-6, Ly.region.e - Ly.region.s);
+  if (Ly.mode === 'sample'){
+    Ly.slices.forEach((p, i) => { if (i) g.fillRect(Math.round((p - rs) / rl * W), 0, d, H); });
+    if (M.active && M.layer === CUR && M.slice >= 0){
+      const a = Ly.slices[M.slice], b = M.slice + 1 < Ly.slices.length ? Ly.slices[M.slice + 1] : Ly.region.e;
+      g.fillRect((a - rs) / rl * W, H - 6 * d, (b - a) / rl * W, 6 * d);
+    }
+  }
+  for (const v of A.grainVis){
+    if (v.layer !== CUR || v.t > now) continue;
+    const x = (v.p - rs) / rl * W;
+    if (x >= 0 && x <= W) g.fillRect(x - 1.5 * d, (1 - v.y) * H - 1.5 * d, 3 * d, 3 * d);
+  }
+  if (M.active && M.layer === CUR){
+    const x = M.x * W, y = (1 - M.y) * H;
+    g.fillRect(x, 0, d, H); g.fillRect(0, y, W, d);
+    g.fillRect(x - 8 * d, y - 8 * d, 16 * d, 16 * d);
+  }
+  g.font = `bold ${9 * d}px ${UIFONT}`; g.textBaseline = 'top';
+  g.fillText('Y · ' + MXT[S.mx.tgt][1], 6 * d, 6 * d);
+  g.textAlign = 'right'; g.fillText(Ly.buf ? 'CAPA ' + Ly.name : 'SIN MUESTRA', W - 6 * d, 6 * d); g.textAlign = 'left';
+}
+
+/* =========================================================
+   UI · WAVEFORM (onda, región, slices, granos, voces)
+   ========================================================= */
+const wave = $('#wave'), wctx = wave.getContext('2d');
+function renderCache(Ly){
+  const W = 1200, H = 240;
+  const cv = Ly.wcache || document.createElement('canvas');
+  cv.width = W; cv.height = H; Ly.wcache = cv;
+  const g = cv.getContext('2d');
+  g.clearRect(0, 0, W, H);
+  if (!Ly.buf) return;
+  const b = Ly.buf, d0 = b.getChannelData(0), d1 = b.numberOfChannels > 1 ? b.getChannelData(1) : null;
+  const n = d0.length, spp = n / W, st = Math.max(1, Math.floor(spp / 96)), mid = H / 2;
+  g.fillStyle = '#000';
+  for (let x = 0; x < W; x++){
+    let mn = 0, mx = 0;
+    const a = Math.floor(x * spp), e = Math.min(n, Math.floor((x + 1) * spp) + 1);
+    for (let i = a; i < e; i += st){ const v = d1 ? (d0[i] + d1[i]) * 0.5 : d0[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+    const y1 = mid - mx * mid * 0.92, y2 = mid - mn * mid * 0.92;
+    g.fillRect(x, y1, 1, Math.max(1, y2 - y1));
+  }
+}
+function sizeCanvases(){
+  const d = DPR();
+  for (const c of [wave, $('#env'), mxc]){
+    const r = c.getBoundingClientRect();
+    if (r.width < 2) continue;
+    c.width = Math.round(r.width * d); c.height = Math.round(r.height * d);
+  }
+  drawEnv();
+}
+function drawWave(now){
+  const g = wctx, W = wave.width, H = wave.height, d = DPR(), Ly = L();
+  if (W < 2) return;
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+  if (!Ly.buf){ g.fillStyle = '#000'; g.font = `${10 * d}px ${UIFONT}`; g.textBaseline = 'top'; g.fillText('SIN MUESTRA · REC MIC, LOAD O INIT', 10 * d, 10 * d); return; }
+  g.drawImage(Ly.wcache, 0, 0, W, H);
+  const xs = Ly.region.s * W, xe = Ly.region.e * W, rl = Ly.region.e - Ly.region.s;
+  g.fillStyle = 'rgba(255,255,255,0.82)';
+  g.fillRect(0, 0, xs, H); g.fillRect(xe, 0, W - xe, H);
+  g.fillStyle = '#000';
+  if (Ly.mode === 'grain'){
+    A.grainVis = A.grainVis.filter(v => v.e > now);
+    for (const v of A.grainVis){ if (v.layer === CUR && v.t <= now) g.fillRect(v.p * W, H * 0.3, d, H * 0.4); }
+    Ly.steps.forEach((s, i) => {
+      if (!s.on || i >= Ly.len) return;
+      const x = (Ly.region.s + s.pos * rl) * W;
+      g.fillRect(x - d * 0.5, H - 12 * d, d, 12 * d);
+      if (i === A.cur[CUR]) g.fillRect(x - 2 * d, H - 12 * d, 4 * d, 12 * d);
+    });
+    const kx = (Ly.region.s + Ly.grain.pos / 100 * rl) * W;
+    for (let y = 0; y < H; y += 8 * d) g.fillRect(kx, y, d, 4 * d);
+  } else {
+    const sl = Ly.slices, n = sl.length;
+    g.font = `${8 * d}px ${UIFONT}`; g.textBaseline = 'bottom';
+    sl.forEach((p, i) => {
+      const x = p * W, nx = (i + 1 < n ? sl[i + 1] : Ly.region.e) * W;
+      if (i) g.fillRect(x, 20 * d, d, H - 20 * d);
+      if (i === Ly.sel) g.fillRect(x, H - 5 * d, nx - x, 5 * d);
+      if (nx - x > 14 * d) g.fillText(String(i + 1), x + 3 * d, H - 7 * d);
+    });
+    for (const v of Ly.voices){
+      if (now < v.t || now > v.stopT) continue;
+      const x = (v.startN + (now - v.t) * v.rate / Ly.buf.duration) * W;
+      g.fillRect(x, 20 * d, 2 * d, H - 20 * d);
+    }
+  }
+  // tiradores S / E (franja superior)
+  const tab = 18 * d;
+  g.font = `bold ${9 * d}px ${UIFONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const [x, lab, dir] of [[xs, 'S', 1], [xe, 'E', -1]]){
+    g.fillStyle = '#000'; g.fillRect(x - d, 0, 2 * d, Ly.mode === 'grain' ? H : tab + 4 * d);
+    const tx = dir > 0 ? x : x - tab;
+    g.fillRect(tx, 0, tab, tab);
+    g.fillStyle = '#fff'; g.fillText(lab, tx + tab / 2, tab / 2 + d * 0.5);
+  }
+  g.textAlign = 'left';
+}
+function updRegionTxt(){
+  const Ly = L();
+  if (!Ly.buf){ $('#regTxt').textContent = ''; return; }
+  const dur = Ly.buf.duration;
+  $('#regTxt').textContent = (Ly.region.s * dur).toFixed(2) + '–' + (Ly.region.e * dur).toFixed(2) + 's';
+}
+
+(function waveInteraction(){
+  let drag = null, lastTap = { t: 0, k: -1 }, audition = null;
+  const geo = e => { const r = wave.getBoundingClientRect(); return { x: clamp((e.clientX - r.left) / r.width, 0, 1), y: e.clientY - r.top, w: r.width }; };
+  const moveSE = (which, x) => {
+    const Ly = L();
+    if (which === 's') Ly.region.s = clamp(x, 0, Ly.region.e - 0.01);
+    else Ly.region.e = clamp(x, Ly.region.s + 0.01, 1);
+    updSlices(Ly);
+  };
+  wave.addEventListener('pointerdown', e => {
+    const Ly = L(); if (!Ly.buf || !A.ctx) return;
+    e.preventDefault(); wave.setPointerCapture(e.pointerId);
+    const { x, y, w } = geo(e);
+    const nearSE = () => Math.abs(x - Ly.region.s) <= Math.abs(x - Ly.region.e) ? 's' : 'e';
+    if (Ly.mode === 'grain' || y < 24){
+      const which = x <= Ly.region.s ? 's' : x >= Ly.region.e ? 'e' : nearSE();
+      drag = { kind: 'se', which }; moveSE(which, x); return;
+    }
+    // modo sample: marcador cercano
+    const sl = Ly.slices, tol = 18 / w;
+    let best = -1, bd = tol;
+    for (let k = 1; k < sl.length; k++){ const dd = Math.abs(sl[k] - x); if (dd < bd){ bd = dd; best = k; } }
+    const now = performance.now();
+    if (best > 0){
+      if (Ly.smp.by === 'manual' && now - lastTap.t < 320 && lastTap.k === best){
+        const j = Ly.smp.manual.findIndex(p => Math.abs(p - sl[best]) < 1e-9);
+        if (j >= 0) Ly.smp.manual.splice(j, 1);
+        updSlices(Ly); lastTap = { t: 0, k: -1 }; drag = null; return;
+      }
+      lastTap = { t: now, k: best };
+      drag = { kind: 'marker', k: best, x0: x, moved: false };
+      return;
+    }
+    if (Ly.smp.by === 'manual'){
+      if (x > Ly.region.s && x < Ly.region.e && Ly.smp.manual.length < 64){
+        Ly.smp.manual.push(x); Ly.smp.manual.sort((a, b) => a - b);
+        updSlices(Ly);
+        const k = Ly.slices.findIndex(p => Math.abs(p - x) < 1e-9);
+        drag = k > 0 ? { kind: 'marker', k, x0: x, moved: true } : null;
+        lastTap = { t: now, k };
+      }
+      return;
+    }
+    // tocar dentro de un slice: seleccionarlo y escucharlo
+    const k = sliceAt(Ly, x); Ly.sel = k;
+    audition = playSlice(Ly, k, A.ctx.currentTime + 0.005, { off: Infinity });
+    refreshUI();
+  });
+  wave.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const Ly = L(), { x, w } = geo(e);
+    if (drag.kind === 'se'){ moveSE(drag.which, x); return; }
+    if (!drag.moved && Math.abs(x - drag.x0) * w < 4) return;
+    if (!drag.moved){
+      if (Ly.smp.by !== 'manual'){ toManual(Ly); refreshUI(); }
+      drag.moved = true;
+    }
+    const sl = Ly.slices, k = drag.k;
+    const lo = sl[k - 1], hi = k + 1 < sl.length ? sl[k + 1] : Ly.region.e;
+    const j = Ly.smp.manual.findIndex(p => Math.abs(p - sl[k]) < 1e-9);
+    if (j < 0) return;
+    const nx = clamp(x, lo + 0.004, hi - 0.004);
+    Ly.smp.manual[j] = nx;
+    updSlices(Ly);
+    drag.k = Ly.slices.findIndex(p => Math.abs(p - nx) < 1e-9);
+    if (drag.k < 1) drag = null;
+  });
+  const up = () => {
+    const Ly = L();
+    if (drag && drag.kind === 'marker' && !drag.moved && Ly.smp.by !== 'manual'){
+      Ly.sel = drag.k; audition = playSlice(Ly, drag.k, A.ctx.currentTime + 0.005, { off: Infinity }); refreshUI();
+    }
+    if (audition){ audition.release(A.ctx.currentTime + (drag && !drag.moved ? 0.25 : 0)); audition = null; }
+    drag = null;
+  };
+  wave.addEventListener('pointerup', up); wave.addEventListener('pointercancel', up);
+})();
+
+/* =========================================================
+   UI · ENVOLVENTE
+   ========================================================= */
+function drawEnv(){
+  const c = $('#env'), g = c.getContext('2d'), W = c.width, H = c.height, d = DPR(), p = 6 * d, Ly = L();
+  if (W < 2) return;
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+  let a, dd, r, s, hold;
+  if (Ly.mode === 'grain'){
+    a = Ly.env.a / 100; dd = Ly.env.d / 100; r = Ly.env.r / 100; s = Ly.env.s / 100; const sum = a + dd + r;
+    if (sum > 1){ a /= sum; dd /= sum; r /= sum; }
+    hold = 1 - a - dd - r;
+  } else {
+    const E = Ly.senv; s = E.s / 100;
+    const tot = E.a + E.d + E.r, hv = Math.max(200, tot * 0.4), all = tot + hv;
+    a = E.a / all; dd = E.d / all; r = E.r / all; hold = hv / all;
+  }
+  const X = v => p + v * (W - 2 * p), Y = v => H - p - v * (H - 2 * p);
+  g.fillStyle = '#000';
+  g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(a), Y(1)); g.lineTo(X(a + dd), Y(s)); g.lineTo(X(a + dd + hold), Y(s)); g.lineTo(X(a + dd + hold + r), Y(0)); g.closePath(); g.fill();
+  g.fillRect(0, H - p, W, d);
+}
+
+/* =========================================================
+   UI · BUCLE DE PANTALLA
+   ========================================================= */
+function frame(){
+  requestAnimationFrame(frame);
+  if (!A.ctx) return;
+  const now = A.ctx.currentTime, tab = document.body.dataset.tab;
+  let changed = false;
+  while (A.uiQ.length && A.uiQ[0].t <= now){ const q = A.uiQ.shift(); A.cur[q.layer] = q.i; if (q.layer === CUR) changed = true; }
+  if (changed) paintPlayhead();
+  A.grainVis = A.grainVis.filter(v => v.e > now - 0.02);
+  if (tab === 'sample'){
+    drawWave(now);
+    lfoDots.forEach(({ dot, F }) => { dot.style.left = `calc(${((lfoVal(F(), now) + 1) / 2).toFixed(3)} * (100% - 6px))`; });
+  } else if (tab === 'perform') drawMx(now);
+  if (A.micRec) $('#micRec').textContent = 'STOP ' + fmtClk(now - A.micRec.t0);
+  if (A.outRec) $('#recOut').textContent = A.outRec.state === 'rec' ? fmtClk(now - A.outRec.t0) : 'T' + Math.max(0, A.outRec.tailEnd - now).toFixed(1);
+}
+
+/* =========================================================
+   ARRANQUE Y EVENTOS GLOBALES
+   ========================================================= */
+function setTab(t){
+  document.body.dataset.tab = t;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  requestAnimationFrame(() => { sizeCanvases(); window.scrollTo(0, 0); });
+}
+function setLayer(i){
+  if (i === CUR) return;
+  if (M.active && !M.down) mxStop();
+  CUR = i; refreshUI(); paintPlayhead();
+}
+
+buildUI();
+setTab('sample');
+refreshUI();
+window.addEventListener('resize', sizeCanvases);
+requestAnimationFrame(frame);
+
+$('#startBtn').addEventListener('click', async () => {
+  const ok = await initAudio();
+  if (ok){ $('#start').remove(); sizeCanvases(); }
+});
+document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.t)));
+$('#layA').addEventListener('click', () => setLayer(0));
+$('#layB').addEventListener('click', () => setLayer(1));
+$('#play').addEventListener('click', togglePlay);
+$('#bpmDn').addEventListener('click', () => setBpm(S.bpm - 1));
+$('#bpmUp').addEventListener('click', () => setBpm(S.bpm + 1));
+(function bpmDrag(){
+  const v = $('#bpmV'); let sy = 0, sb = 0, on = false;
+  v.addEventListener('pointerdown', e => { e.preventDefault(); v.setPointerCapture(e.pointerId); on = true; sy = e.clientY; sb = S.bpm; });
+  v.addEventListener('pointermove', e => { if (on) setBpm(sb + (sy - e.clientY) / 3); });
+  v.addEventListener('pointerup', () => on = false); v.addEventListener('pointercancel', () => on = false);
+})();
+$('#recOut').addEventListener('click', recOutToggle);
+$('#save').addEventListener('click', saveWav);
+if (navigator.canShare) $('#share').hidden = false;
+$('#share').addEventListener('click', shareWav);
+$('#micRec').addEventListener('click', micToggle);
+$('#loadBtn').addEventListener('click', () => $('#file').click());
+$('#file').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; loadFile(f); });
+$('#initS').addEventListener('click', () => { if (A.ctx) setSample(L(), CUR ? makeInitDrums() : makeInitTonal(), CUR ? 'INIT BEAT' : 'INIT'); });
+
+// iOS puede suspender o interrumpir el contexto (llamadas, cambio de app): se reanuda al siguiente toque
+document.addEventListener('pointerdown', () => { if (A.ctx && A.ctx.state !== 'running') A.ctx.resume(); }, true);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && A.ctx && A.ctx.state !== 'running') status('TOCA PARA REANUDAR EL AUDIO', true, 4000);
+});
+
+// PWA: service worker (solo por HTTPS)
+if ('serviceWorker' in navigator && location.protocol === 'https:'){
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
